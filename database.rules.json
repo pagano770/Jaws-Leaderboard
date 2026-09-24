@@ -1,0 +1,29 @@
+{
+  "rules": {
+    "jawboard": {
+      "$class": {
+        ".read": true,
+        "trials": {
+          "$trialId": {
+            ".write": true,
+            ".validate": "newData.hasChildren(['team', 'config', 'force', 't']) && newData.child('team').isString() && newData.child('team').val().length < 20 && newData.child('config').isString() && newData.child('config').val().length < 10 && newData.child('force').isNumber() && newData.child('force').val() >= 0 && newData.child('force').val() < 2000 && newData.child('t').isNumber()"
+          }
+        },
+        "calc": {
+          "$team": {
+            "$config": {
+              ".write": true,
+              ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() < 2000"
+            }
+          }
+        },
+        "names": {
+          "$team": {
+            ".write": true,
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 24"
+          }
+        }
+      }
+    }
+  }
+}
