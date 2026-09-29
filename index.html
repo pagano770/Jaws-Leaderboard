@@ -655,7 +655,15 @@ async function connect() {
     await st.port.open({ baudRate: 115200 });
   } catch (e) {
     st.port = null;
-    if (e.name !== "NotFoundError") toast(DEMO ? "Can't open a sensor here. Use Simulate a squeeze instead." : "Couldn't open the sensor. Close the Arduino Serial Monitor and try again.");
+    if (e.name === "NotFoundError") return;  // popup closed without choosing
+    const why = e.name === "SecurityError"
+      ? "This page isn't allowed to use USB. Open the GitHub Pages site directly in Chrome."
+      : e.name === "InvalidStateError"
+      ? "That sensor is already connected in another tab. Close other leaderboard tabs."
+      : "The sensor is busy. Fully close the Arduino IDE (and Serial Monitor), unplug and replug the USB, then try again.";
+    console.error("Sensor connect error:", e);
+    toast(why);
+    $("liveState").textContent = "Not connected: " + (e.message || e.name);
     return;
   }
   const dec = new TextDecoderStream();
