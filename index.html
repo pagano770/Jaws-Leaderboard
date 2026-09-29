@@ -247,13 +247,13 @@ summary { font-weight: 700; cursor: pointer; }
     </div>
     <div id="demoWarn" class="warn demo-bar hidden">
       <span>Demo mode: fake teams and forces, saved only in this browser.</span>
-      <label class="toggle"><input type="checkbox" id="simLive" checked> Simulate live squeezes</label>
+      <label class="toggle"><input type="checkbox" id="simLive" checked> Simulate live tests</label>
       <button id="sample" class="x" style="color:var(--ink)">Reset demo data</button>
     </div>
     <div class="board" id="boardGrid">
       <div id="panel" role="tabpanel"></div>
       <aside class="feed">
-        <h2>Latest squeezes</h2>
+        <h2>Latest tests</h2>
         <ol id="feed"></ol>
         <button id="clearAll" class="btn secondary hidden" style="margin-top:1.25rem">Clear all results for this class</button>
       </aside>
@@ -293,7 +293,7 @@ summary { font-weight: 700; cursor: pointer; }
         <div class="btns">
           <button class="btn" id="connectBtn">Connect sensor</button>
           <button class="btn secondary" id="tareBtn" disabled>Zero</button>
-          <button class="btn secondary hidden" id="simBtn">Simulate a squeeze</button>
+          <button class="btn secondary hidden" id="simBtn">Simulate a test</button>
         </div>
         <p class="hint">Keep the jaw open and unloaded while connecting. The sensor zeroes itself.</p>
 
@@ -305,10 +305,10 @@ summary { font-weight: 700; cursor: pointer; }
 
         <div class="field" style="margin-top:1rem">
           <div class="inline">
-            <label for="thrInput" style="font-weight:700">Count squeezes above</label>
+            <label for="thrInput" style="font-weight:700">Count tests above</label>
             <input type="number" id="thrInput" min="0.1" step="0.1"> <span>N</span>
           </div>
-          <label class="toggle" style="margin-top:.6rem"><input type="checkbox" id="pauseChk"> Pause saving (practice squeezes)</label>
+          <label class="toggle" style="margin-top:.6rem"><input type="checkbox" id="pauseChk"> Pause saving (practice tests)</label>
         </div>
 
         <details>
@@ -320,7 +320,7 @@ summary { font-weight: 700; cursor: pointer; }
           </div>
         </details>
 
-        <h2 style="font-family:var(--display);font-weight:600;font-size:1.6rem;margin:1.75rem 0 0">Your team's squeezes</h2>
+        <h2 style="font-family:var(--display);font-weight:600;font-size:1.6rem;margin:1.75rem 0 0">Your team's tests</h2>
         <ul class="mytrials" id="myTrials"></ul>
       </div>
     </div>
