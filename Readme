@@ -4,7 +4,6 @@ A live classroom leaderboard for the McKibben-muscle jaw project. Each team's lo
 
 Built by the Soft Robotics Clinic, Fall 2026: Chidera Anyanwu, Brandon De La Puente, Blanca Rivera, Kieran McGovern, Gabriella Pagano, David Weaver.
 
-Open it
 Scoreboard (projector) - https://pagano770.github.io/Jaws-Leaderboard/
 Team station - https://pagano770.github.io/Jaws-Leaderboard/#station
 
@@ -24,12 +23,11 @@ How it works:
 Load cell → HX711 amplifier → Arduino Uno ──USB──> Team station page (Chrome) ──> Firebase ──> Scoreboard
 
 Files:
-File - What it is 
 index.html - The whole website: scoreboard and team station in one page
 jaw_force_sensor.ino - Arduino code, uploaded to every team's Uno. Keep it in a folder named `jaw_force_sensor` when opening it in the Arduino IDE |
 database.rules.json - Security rules to paste into Firebase
 SETUP.md - Step-by-step setup and classroom instructions
-README.md`- This page
+README.md- This page
 
 Getting started:
 Full instructions are in SETUP.md. 
