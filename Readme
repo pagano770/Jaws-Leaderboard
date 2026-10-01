@@ -1,11 +1,11 @@
-# Jaw Force Challenge Leaderboard
+Jaw Force Challenge Leaderboard
 
-A live classroom leaderboard for the McKibben-muscle jaw project. Each team's load cell sensor sends its readings to a web page, every squeeze of the jaw is saved automatically, and the results appear instantly on the projector and on students' phones.
+A live classroom leaderboard for the McKibben-muscle jaw project. Each team's load cell sensor sends its readings to a web page, every squeeze of the jaw is saved automatically, and the results appear instantly on the projector.
 
 Built by the Soft Robotics Clinic, Fall 2026: Chidera Anyanwu, Brandon De La Puente, Blanca Rivera, Kieran McGovern, Gabriella Pagano, David Weaver.
 
 ## Open it
-Scoreboard (projector) - https://pagano770.github.io/Jaws-Leaderboard/ |
+Scoreboard (projector) - https://pagano770.github.io/Jaws-Leaderboard/
 Team station - https://pagano770.github.io/Jaws-Leaderboard/#station
 
 For a separate board per class period, add `?class=` to both links, for example `…/Jaws-Leaderboard/?class=p3` and `…/Jaws-Leaderboard/?class=p3#station`.
