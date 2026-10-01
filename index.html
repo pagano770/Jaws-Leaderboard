@@ -19,8 +19,9 @@ const CONFIG = {
   altJaws: ["Alt jaw 1", "Alt jaw 2", "Alt jaw 3"],
   defaultClass: "main",        // override per period with ?class=p3
   defaultThresholdN: 2,        // squeezes must pass this force to count
-  // Paste your Firebase web config here. Leave as null to run in demo mode
-  // (fake teams, fake forces and simulated squeezes, saved only in this browser).
+  // Paste your Firebase web config here (SETUP.md, step 2) so every laptop,
+  // the projector and phones share results. While it is null, results are
+  // saved only on the computer they were recorded on.
   firebase: null
   /* Example:
   firebase: {
@@ -114,7 +115,7 @@ button { cursor: pointer; }
 .status { display: inline-flex; align-items: center; gap: .4rem; }
 .status::before { content: ""; width: .6rem; height: .6rem; border-radius: 50%; background: var(--fitting); }
 .status.live::before { background: #3FA34D; }
-.status.demo::before { background: var(--signal); }
+.status.local::before { background: var(--signal); }
 .switch { color: var(--ink); font-weight: 700; text-decoration-thickness: 2px; text-underline-offset: 4px; }
 
 /* Tabs */
@@ -220,7 +221,6 @@ summary { font-weight: 700; cursor: pointer; }
 .toast { position: fixed; left: 50%; bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: .7rem 1.2rem; border-radius: 8px; font-weight: 700; opacity: 0; pointer-events: none; transition: opacity .25s; max-width: 90vw; }
 .toast.show { opacity: 1; }
 .warn { border-left: 4px solid var(--signal); padding: .5rem .9rem; background: var(--surface); margin: 1rem 0; }
-.demo-bar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.25rem; }
 .hidden { display: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .muscle, .toast { transition: none; }
@@ -245,11 +245,7 @@ summary { font-weight: 700; cursor: pointer; }
       <button role="tab" id="tab-matrix" aria-selected="false" data-tab="matrix">By orientation</button>
       <button role="tab" id="tab-acc" aria-selected="false" data-tab="acc">Calculated vs. measured</button>
     </div>
-    <div id="demoWarn" class="warn demo-bar hidden">
-      <span>Demo mode: fake teams and forces, saved only in this browser.</span>
-      <label class="toggle"><input type="checkbox" id="simLive" checked> Simulate live tests</label>
-      <button id="sample" class="x" style="color:var(--ink)">Reset demo data</button>
-    </div>
+    <div id="localWarn" class="warn hidden"><b>Not connected to the online database yet.</b> Results are saved only on this computer and won't appear on other screens. To share them, add the Firebase settings (SETUP.md, step 2).</div>
     <div class="board" id="boardGrid">
       <div id="panel" role="tabpanel"></div>
       <aside class="feed">
@@ -293,7 +289,6 @@ summary { font-weight: 700; cursor: pointer; }
         <div class="btns">
           <button class="btn" id="connectBtn">Connect sensor</button>
           <button class="btn secondary" id="tareBtn" disabled>Zero</button>
-          <button class="btn secondary hidden" id="simBtn">Simulate a test</button>
         </div>
         <p class="hint">Keep the jaw open and unloaded while connecting. The sensor zeroes itself.</p>
 
@@ -343,7 +338,6 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const fmt = n => (Math.round(n * 10) / 10).toFixed(1);
 const mean = a => a.reduce((s, x) => s + x, 0) / a.length;
-const sleep = ms => new Promise(r => setTimeout(r, ms));
 const cfgLabel = id => (CFGS.find(c => c.id === id) || { label: id }).label;
 
 function toast(msg) {
@@ -361,36 +355,6 @@ function ago(ts) {
 }
 const safeGet = k => { try { return localStorage.getItem(k); } catch { return null; } };
 const safeSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
-
-/* ---------- demo data model ---------- */
-const DEMO_NAMES = ["Clam Crushers", "Shell Shockers", "The Leatherbacks", "Oyster Busters", "Snap Jaws", "Mussel Memory"];
-const DEMO_SKILL = [1.12, 1.0, 0.93, 1.06, 0.87, 0.98];
-const DEMO_BIAS = [0.06, -0.12, 0.2, -0.04, 0.28, 0.1];   // how far off each team's calculations run
-const ORI_BASE = { A: 14, B: 16, C: 19, D: 12, E: 17, F: 21, G: 18, ALT1: 24, ALT2: 15, ALT3: 28 };
-const cfgBase = (id, i) => ORI_BASE[id] || 12 + i * 1.3;
-function demoForce(teamIdx, cfgId) {
-  const i = CFGS.findIndex(c => c.id === cfgId);
-  return +(cfgBase(cfgId, i) * (DEMO_SKILL[teamIdx] || 1) * (1 + (Math.random() - 0.5) * 0.18)).toFixed(2);
-}
-function buildDemoData() {
-  const d = { trials: {}, calc: {}, names: {} };
-  let n = 0;
-  DEMO_NAMES.forEach((name, ti) => {
-    const id = TEAMS[ti] && TEAMS[ti].id;
-    if (!id) return;
-    d.names[id] = name;
-    d.calc[id] = {};
-    CFGS.forEach((c, ci) => {
-      if (Math.random() < 0.12) return;  // some teams haven't tested everything yet
-      const reps = 3 + Math.floor(Math.random() * 3);
-      for (let k = 0; k < reps; k++) {
-        d.trials["d" + (n++)] = { team: id, config: c.id, force: demoForce(ti, c.id), t: Date.now() - Math.floor(Math.random() * 2400000) - 60000 };
-      }
-      if (c.kind === "std") d.calc[id][c.id] = +(cfgBase(c.id, ci) * DEMO_SKILL[ti] * (1 + DEMO_BIAS[ti] + (Math.random() - 0.5) * 0.2)).toFixed(2);
-    });
-  });
-  return d;
-}
 
 /* ---------- data stores ---------- */
 async function firebaseStore() {
@@ -422,7 +386,7 @@ async function firebaseStore() {
 }
 
 function localStore() {
-  const key = "jawboard-demo:" + CLASS_ID;
+  const key = "jawboard-local:" + CLASS_ID;
   const empty = () => ({ trials: {}, calc: {}, names: {} });
   const load = () => { try { return { ...empty(), ...JSON.parse(safeGet(key)) }; } catch { return empty(); } };
   let mem = null;  // fallback if browser storage is unavailable
@@ -436,9 +400,8 @@ function localStore() {
   };
   const save = d => { safeSet(key, JSON.stringify(d)); if (safeGet(key) === null) mem = d; emit(); };
   addEventListener("storage", e => { if (e.key === key) emit(); });
-  if (!safeGet(key)) save(buildDemoData());
   return {
-    mode: "demo",
+    mode: "local",
     onTrials(cb) { subs.trials.push(cb); emit(); },
     onCalc(cb) { subs.calc.push(cb); emit(); },
     onNames(cb) { subs.names.push(cb); emit(); },
@@ -447,8 +410,7 @@ function localStore() {
     async deleteTrial(id) { const d = read(); delete d.trials[id]; save(d); },
     async setCalc(team, cfg, val) { const d = read(); d.calc[team] = d.calc[team] || {}; if (val == null) delete d.calc[team][cfg]; else d.calc[team][cfg] = val; save(d); },
     async setName(team, name) { const d = read(); if (name == null) delete d.names[team]; else d.names[team] = name; save(d); },
-    async clearAll() { save(empty()); },
-    async resetDemo() { save(buildDemoData()); }
+    async clearAll() { save(empty()); }
   };
 }
 
@@ -457,10 +419,10 @@ try {
   store = CONFIG.firebase && CONFIG.firebase.databaseURL ? await firebaseStore() : localStore();
 } catch (err) {
   console.error(err);
-  toast("Couldn't reach the database. Check the Firebase settings. Running in demo mode.");
+  toast("Couldn't reach the online database. Check the Firebase settings. Saving on this computer only.");
   store = localStore();
 }
-const DEMO = store.mode === "demo";
+const LOCAL = store.mode === "local";
 
 /* ---------- shared state ---------- */
 const state = { trials: [], calc: {}, names: {}, tab: "bite", prevBest: null };
@@ -471,8 +433,8 @@ $("classLabel").textContent = "Class: " + CLASS_ID;
 
 store.onConnection(ok => {
   const s = $("status");
-  s.className = "status " + (DEMO ? "demo" : ok ? "live" : "");
-  s.textContent = DEMO ? "Demo mode" : ok ? "Live" : "Reconnecting";
+  s.className = "status " + (LOCAL ? "local" : ok ? "live" : "");
+  s.textContent = LOCAL ? "This computer only" : ok ? "Live" : "Reconnecting";
 });
 
 /* ---------- scoreboard ---------- */
@@ -575,10 +537,7 @@ function initBoard() {
     state.prevBest = null;
     renderBoard();
   }));
-  if (DEMO) {
-    $("demoWarn").classList.remove("hidden");
-    $("sample").addEventListener("click", () => { state.prevBest = null; store.resetDemo(); toast("Demo data reset"); });
-  }
+  if (LOCAL) $("localWarn").classList.remove("hidden");
   if (ADMIN) {
     $("clearAll").classList.remove("hidden");
     $("clearAll").addEventListener("click", async () => {
@@ -589,25 +548,12 @@ function initBoard() {
   setInterval(() => { if (views.board.shown) renderFeed(); }, 30000);
 }
 
-/* Demo: a random named team logs a squeeze every few seconds */
-if (DEMO) {
-  setInterval(() => {
-    if (!$("simLive").checked || document.hidden) return;
-    const named = TEAMS.map((t, i) => ({ t, i })).filter(x => state.names[x.t.id]);
-    const pool = named.length ? named : TEAMS.slice(0, 6).map((t, i) => ({ t, i }));
-    const pick = pool[Math.floor(Math.random() * pool.length)];
-    const cfg = CFGS[Math.floor(Math.random() * CFGS.length)];
-    const skillIdx = pick.i < DEMO_SKILL.length ? pick.i : 1;
-    store.addTrial({ team: pick.t.id, config: cfg.id, force: +(demoForce(skillIdx, cfg.id) * (Math.random() < 0.15 ? 1.12 : 1)).toFixed(2) });
-  }, 6000);
-}
-
 /* ---------- team station ---------- */
 const st = {
   team: safeGet("jaw:team") || "", cfg: safeGet("jaw:cfg") || CFGS[0].id,
   port: null, reader: null, writer: null,
   active: false, peak: 0, samples: 0, hist: [],
-  thr: parseFloat(safeGet("jaw:thr")) || CONFIG.defaultThresholdN, paused: false, simulating: false
+  thr: parseFloat(safeGet("jaw:thr")) || CONFIG.defaultThresholdN, paused: false
 };
 if (!CFGS.some(c => c.id === st.cfg)) st.cfg = CFGS[0].id;
 if (st.team && !TEAMS.some(t => t.id === st.team)) st.team = "";
@@ -736,21 +682,6 @@ async function finishSqueeze(peak) {
   } catch { toast("Couldn't save. Check the internet connection."); }
 }
 
-/* Demo: feeds a fake squeeze through the same detection code a real sensor uses */
-async function simulateSqueeze() {
-  if (st.simulating || st.port) return;
-  st.simulating = true;
-  $("simBtn").disabled = true;
-  const ti = TEAMS.findIndex(t => t.id === st.team);
-  const peak = demoForce(ti >= 0 && ti < DEMO_SKILL.length ? ti : 1, st.cfg);
-  const rise = 16, noise = () => (Math.random() - 0.5) * 0.3;
-  for (let i = 0; i < 4; i++) { onForce(Math.abs(noise())); await sleep(100); }
-  for (let i = 0; i <= rise; i++) { onForce(Math.max(0, peak * Math.pow(Math.sin(Math.PI * i / rise), 1.4) + noise())); await sleep(100); }
-  for (let i = 0; i < 6; i++) { onForce(Math.abs(noise())); await sleep(100); }
-  st.simulating = false;
-  $("simBtn").disabled = false;
-}
-
 function drawSpark() {
   const c = $("spark");
   if (!c.clientWidth) return;
@@ -772,9 +703,7 @@ function drawSpark() {
 }
 
 function initStation() {
-  if (!("serial" in navigator) && !DEMO) { $("noSerial").classList.remove("hidden"); $("connectBtn").disabled = true; }
-  if (!("serial" in navigator) && DEMO) $("connectBtn").disabled = true;
-  if (DEMO) $("simBtn").classList.remove("hidden");
+  if (!("serial" in navigator)) { $("noSerial").classList.remove("hidden"); $("connectBtn").disabled = true; }
   $("thrInput").value = st.thr;
 
   $("teamSel").addEventListener("change", e => { st.team = e.target.value; safeSet("jaw:team", st.team); renderStationControls(); renderMyTrials(); });
@@ -797,7 +726,6 @@ function initStation() {
   $("thrInput").addEventListener("change", e => { const v = parseFloat(e.target.value); if (v > 0) { st.thr = v; safeSet("jaw:thr", v); drawSpark(); } });
   $("pauseChk").addEventListener("change", e => st.paused = e.target.checked);
   $("connectBtn").addEventListener("click", connect);
-  $("simBtn").addEventListener("click", simulateSqueeze);
   $("tareBtn").addEventListener("click", () => send("t"));
   $("calBtn").addEventListener("click", () => {
     const g = parseFloat($("massInput").value);
