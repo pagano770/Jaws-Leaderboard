@@ -7,7 +7,7 @@ Built by the Soft Robotics Clinic, Fall 2026: Chidera Anyanwu, Brandon De La Pue
 Scoreboard (projector) - https://pagano770.github.io/Jaws-Leaderboard/
 Team station - https://pagano770.github.io/Jaws-Leaderboard/#station
 
-For a separate board per class period, add `?class=` to both links, for example `…/Jaws-Leaderboard/?class=p3` and `…/Jaws-Leaderboard/?class=p3#station`.
+For a separate board per class period, add `?class=` to both links, for example `…/Jaws-Leaderboard/?class=s3` and `…/Jaws-Leaderboard/?class=p3#station`.
 
 What it does:
 - Reads the sensor directly in the browser. No software to install on the laptops.
