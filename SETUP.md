@@ -56,7 +56,7 @@ Only one program can use the serial port at a time, so close the Arduino Serial 
 
 ## 5. Extras
 
-- **Separate class periods:** add `?class=p3` to both links (e.g., `…/?class=p3` and `…/?class=p3&station`). Each period gets its own board.
+- **Separate class periods:** add `?class=s3` to both links (e.g., `…/?class=s3` and `…/?class=s3&station`). Each period gets its own board.
 - **Admin view:** `…/?admin=1` adds delete buttons to the "Latest squeezes" feed and a button to clear the whole class, including team names.
 - **Teams:** there are 10 team slots. Teams pick a slot and can rename themselves on the station page; the new name shows everywhere. Teams with no squeezes don't appear on the scoreboard, so unused slots stay hidden. To change the default slot names, jaw orientations or alternate jaw names, edit `teams`, `orientations` and `altJaws` in the `CONFIG` block at the top of `index.html`.
 - **Demo mode:** leave `firebase: null`. The page fills itself with six fake teams and fake forces, adds a new simulated squeeze every few seconds (untick **Simulate live squeezes** to stop), and the station page gets a **Simulate a squeeze** button that runs a fake squeeze through the real detection code. Data stays in that browser only. **Reset demo data** starts over.
