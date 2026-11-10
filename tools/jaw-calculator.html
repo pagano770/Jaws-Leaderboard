@@ -322,9 +322,9 @@ canvas { display: block; width: 100%; height: 100%; }
       "<p class='eq'>∇F_LC = ⟨∂F/∂R_MX, ∂F/∂R_MY⟩ = (F_M ÷ R_LC)⟨cos θ, sin θ⟩ = ⟨" + f(R.grad[0], 3) + ", " + f(R.grad[1], 3) + "⟩ N per mm</p>" +
       "<p>Moving the attachment 1 mm in the gradient direction adds about " + f(Math.hypot(...R.grad), 3) + " N. The gradient is perpendicular to the muscle's line of pull, so the best move lengthens the lever arm.</p></section>");
     s.push("<section><h3>6. Uncertainty from partial derivatives <small>(Calc III: error propagation)</small></h3>" +
-      "<p class='eq'>σ_F = √( Σ (∂F/∂q · σ_q)² )</p><table><tr><th>q</th><th>∂F/∂q</th><th>σ_q</th><th>(∂F/∂q · σ_q)²</th><th>Share</th></tr>" +
+      "<p class='eq'>σ_F = √( Σ (∂F/∂q · σ_q)² )</p><div class='table-scroll'><table><tr><th>q</th><th>∂F/∂q</th><th>σ_q</th><th>(∂F/∂q · σ_q)²</th><th>Share</th></tr>" +
       R.dF.map((d, q) => "<tr><td>" + QN[q] + "</td><td class='r'>" + f(d, 3) + " " + units[q] + "</td><td class='r'>" + sq[q] + "</td><td class='r'>" + f(R.contrib[q], 4) + "</td><td class='r'>" + f(100 * R.contrib[q] / tot, 1) + "%</td></tr>").join("") +
-      "</table><p class='eq'>σ_F = " + f(R.sigF, 2) + " N → F_LC = <b>" + f(R.F, 2) + " ± " + f(R.sigF, 2) + " N</b> (about 95%: ± " + f(2 * R.sigF, 2) + " N)</p>" +
+      "</table></div><p class='eq'>σ_F = " + f(R.sigF, 2) + " N → F_LC = <b>" + f(R.F, 2) + " ± " + f(R.sigF, 2) + " N</b> (about 95%: ± " + f(2 * R.sigF, 2) + " N)</p>" +
       "<p>Biggest source of uncertainty: " + QN[big] + ". Measure it most carefully.</p></section>");
     let cmp = "<section><h3>7. Compare with the load cell</h3>";
     if (R.measN > 0) {
