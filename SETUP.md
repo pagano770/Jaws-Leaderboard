@@ -62,6 +62,11 @@ Only one program can use the serial port at a time, so close the Arduino Serial 
 - **Demo mode:** leave `firebase: null`. The page fills itself with six fake teams and fake forces, adds a new simulated squeeze every few seconds (untick **Simulate live squeezes** to stop), and the station page gets a **Simulate a squeeze** button that runs a fake squeeze through the real detection code. Data stays in that browser only. **Reset demo data** starts over.
 - **Switching views:** the link at the top right flips between scoreboard and station. You can also add `#station` to the end of the address.
 
+## 6. Jaw force app and muscle tools
+
+- **Jaw force app:** students click **Open in MATLAB Online** on the [guide page](https://pagano770.github.io/Jaws-Leaderboard/guide.html), sign in with their Rowan account, and type `jaw_force_app`. Nothing to install.
+- **Muscle force vs. pressure (Phase 1):** wire the 0–80 psi pressure sensor to A0 on the same Uno as the HX711, upload `arduino/muscle_force_pressure/muscle_force_pressure.ino`, and paste its output into `tools/force-pressure.html`. The guide page has the full test steps. It uses the same HX711 pins (DT 3, SCK 2) as the leaderboard rigs. If you borrow a leaderboard Uno, upload `jaw_force_sensor.ino` again before class day.
+
 ## Troubleshooting
 
 - **"Not calibrated yet":** run the calibration in step 4.
