@@ -9,6 +9,7 @@ Built by the Soft Robotics Clinic, Fall 2026: Chidera Anyanwu, Brandon De La Pue
 - **Scoreboard (projector):** https://pagano770.github.io/Jaws-Leaderboard/
 - **Team station:** https://pagano770.github.io/Jaws-Leaderboard/#station
 - **Force vs. pressure tool (muscle characterization):** https://pagano770.github.io/Jaws-Leaderboard/tools/force-pressure.html
+- **Muscle pressure graph (pressure over time, leak rate):** https://pagano770.github.io/Jaws-Leaderboard/tools/muscle-pressure.html
 - **Jaw force app (MATLAB Online):** [![Open in MATLAB Online](https://www.mathworks.com/images/responsive/global/open-in-matlab-online.svg)](https://matlab.mathworks.com/open/github/v1?repo=pagano770/Jaws-Leaderboard&file=jaw_force_app.m)
 
 For a separate board per class period, add `?class=` to both links, for example `…/Jaws-Leaderboard/?class=s3` and `…/Jaws-Leaderboard/?class=s3#station`.
@@ -53,6 +54,8 @@ Each student gets their own copy, so changes and saved team files stay in their 
 | `guide.html` | The project guide page: links to everything |
 | `tools/force-pressure.html` | Muscle force vs. pressure graph and fit (Phase 1) |
 | `arduino/muscle_force_pressure/` | Arduino logger for pressure and force together (Phase 1) |
+| `tools/muscle-pressure.html` | Muscle pressure over time: peak and leak rate |
+| `arduino/muscle_pressure_logger/` | MPRLS pressure recorder for the UNO R4 WiFi (prints DATA lines) |
 | `database.rules.json` | Security rules to paste into Firebase |
 | `SETUP.md` | Step-by-step setup and classroom instructions |
 | `README.md` | This page |
@@ -64,6 +67,8 @@ To measure how much force the muscle makes at each pressure and length:
 1. Upload `arduino/muscle_force_pressure/muscle_force_pressure.ino`. First set your HX711 pins, load cell factor (in newtons) and pressure-sensor calibration at the top.
 2. In the Serial Monitor (115200 baud, "Newline"): `t` to zero, `c12` to set the contraction in mm, `h` at each syringe step, `n` for a new trial.
 3. Paste the output into the [Force vs. pressure tool](https://pagano770.github.io/Jaws-Leaderboard/tools/force-pressure.html), which fits F = P(c₁ − c₂ε).
+
+To check the muscle holds air, upload `arduino/muscle_pressure_logger/muscle_pressure_logger.ino` (UNO R4 WiFi + Adafruit MPRLS; install the "Adafruit MPRLS Library"), type `r`, push and hold the syringe, and paste the DATA line into the [Muscle pressure graph](https://pagano770.github.io/Jaws-Leaderboard/tools/muscle-pressure.html).
 
 ## Getting started
 
