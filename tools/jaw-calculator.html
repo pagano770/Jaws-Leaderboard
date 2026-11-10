@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Jaw Force Calculator</title>
+<style>
+:root {
+  --bg: #f6f1e9; --panel: #ffffff; --ink: #2a1a12; --muted: #6e5a4c; --line: #e4d9cb;
+  --air: #57150B; --gold: #ffcc00; --gold-dk: #b08400; --soft: rgba(87,21,11,0.10);
+  --ok: #1b7a4b; --bad: #b3361f; --on-air: #ffffff;
+  --font: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1a120d; --panel: #251a14; --ink: #f4ece3; --muted: #bba795; --line: #3d2c22;
+    --air: #ffcc00; --gold: #ffcc00; --gold-dk: #ffdd66; --soft: rgba(255,204,0,0.12);
+    --ok: #5fd39a; --bad: #ff8a73; --on-air: #2a1a12; color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--font); }
+code, kbd, pre, textarea, input, select, button { font-family: var(--font); }
+a { color: var(--air); }
+.wrap {
+  max-width: 1080px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px;
+  padding: max(24px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(48px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+}
+.back { font-size: .9rem; }
+header { border-bottom: 2px solid var(--air); padding-bottom: 10px; }
+h1 { font-size: 1.9rem; margin: 0; color: var(--air); }
+header p { margin: 4px 0 0; color: var(--muted); max-width: 72ch; }
+h2 { font-size: 1.15rem; margin: 0 0 8px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 3px; padding: 16px; min-width: 0; }
+.hint { margin: 0 0 10px; color: var(--muted); font-size: .88rem; }
+.note-ex { font-style: italic; color: var(--muted); font-size: .88rem; margin: 0; }
+.settings { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px 16px; margin-bottom: 14px; }
+.settings label { display: flex; flex-direction: column; gap: 3px; font-size: .85rem; color: var(--muted); }
+input, select { font-size: .92rem; padding: 5px 7px; border: 1px solid var(--line); border-radius: 3px; background: var(--bg); color: var(--ink); min-width: 0; }
+input[type=number] { font-variant-numeric: tabular-nums; }
+.table-scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-size: .8rem; color: var(--muted); font-weight: bold; vertical-align: bottom; }
+th small { display: block; font-weight: normal; }
+#geo td input { width: 64px; }
+#geo td input.meas { width: 150px; }
+#geo td:first-child, #res td:first-child { font-weight: bold; }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.buttons { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+button { font-size: .88rem; font-weight: bold; padding: 7px 13px; border-radius: 3px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
+button:hover { border-color: var(--air); color: var(--air); }
+button.primary { background: var(--air); border-color: var(--air); color: var(--on-air); }
+button.primary:hover { filter: brightness(1.1); color: var(--on-air); }
+.status { font-size: .86rem; color: var(--muted); }
+.status.err { color: var(--bad); }
+.charts { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; }
+.chart-wrap { position: relative; height: 340px; }
+canvas { display: block; width: 100%; height: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: .82rem; color: var(--muted); margin-bottom: 6px; }
+.legend i { display: inline-block; width: 14px; height: 10px; margin-right: 5px; vertical-align: -1px; }
+.tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 3px; padding: 5px 8px; font-size: .8rem; box-shadow: 0 2px 8px rgba(0,0,0,.12); white-space: nowrap; z-index: 2; }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.stat .k { font-size: .85rem; color: var(--muted); }
+.stat .v { font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+.stat .v small { font-size: .8rem; color: var(--muted); margin-left: 3px; }
+.stat .sub { font-size: .8rem; color: var(--muted); }
+.math-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.math section { border-top: 1px solid var(--line); padding: 10px 0; }
+.math h3 { font-size: 1rem; margin: 0 0 6px; color: var(--air); }
+.math h3 small { font-weight: normal; color: var(--muted); }
+.math p { margin: 3px 0; }
+.math .eq { font-variant-numeric: tabular-nums; padding-left: 14px; }
+.math table { width: auto; margin: 4px 0 4px 14px; }
+.math td.r { text-align: right; }
+.lb { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 14px; margin-bottom: 10px; }
+.lb label { display: flex; flex-direction: column; gap: 3px; font-size: .85rem; color: var(--muted); }
+@media (max-width: 820px) {
+  .charts { grid-template-columns: minmax(0, 1fr); }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .chart-wrap { height: 280px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../guide.html">← JAWS Project</a>
+  <header>
+    <h1>Jaw Force Calculator</h1>
+    <p>Enter your jaw measurements for each muscle orientation. The page uses the moment equation to predict the load cell force, works out the uncertainty and the best muscle angle, and compares the prediction with your squeezes. Your numbers are kept in this browser until you clear them.</p>
+  </header>
+
+  <p class="note-ex" id="exNote">Showing example numbers. Type over them with your team's measurements.</p>
+
+  <section class="panel">
+    <h2>1. Jaw setup</h2>
+    <div class="settings">
+      <label>Team name<input type="text" id="team" maxlength="24"></label>
+      <label>Muscle force<select id="mode"><option value="1">Sum of both muscles</option><option value="2">Average of both muscles</option></select></label>
+      <label>Muscle coefficient a (N/mm)<input type="number" id="a" step="0.1"></label>
+      <label>Length uncertainty (mm)<input type="number" id="sL" step="0.1" min="0"></label>
+      <label>Distance uncertainty (mm)<input type="number" id="sA" step="0.1" min="0"></label>
+      <label>Angle uncertainty (deg)<input type="number" id="sT" step="0.5" min="0"></label>
+    </div>
+    <p class="hint">All distances in mm, measured from your free-body diagram. θ is how far the muscle tilts from vertical. R_MX and R_MY are the sideways and up-down distances from the hinge to where the muscle pulls, and R_LC is the distance from the hinge to the load cell. b is how much each muscle shortens with no load, and x is how much it shortens while pressing the load cell. Measured squeezes are in newtons, separated by commas.</p>
+    <div class="table-scroll">
+      <table id="geo">
+        <thead><tr><th>Orientation</th><th>θ<small>deg</small></th><th>R_MX<small>mm</small></th><th>R_MY<small>mm</small></th><th>R_LC<small>mm</small></th><th>b1<small>mm</small></th><th>b2<small>mm</small></th><th>x1<small>mm</small></th><th>x2<small>mm</small></th><th>Measured squeezes<small>N, e.g. 9.1, 9.6</small></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="buttons" style="margin-top:12px">
+      <button type="button" id="exBtn">Load example numbers</button>
+      <button type="button" id="clearBtn">Clear everything</button>
+      <button type="button" id="copyBtn">Copy results for Excel</button>
+      <span class="status" id="status"></span>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>2. Results</h2>
+    <div class="table-scroll">
+      <table id="res">
+        <thead><tr><th>Orientation</th><th>F_M<small>N</small></th><th>Torque<small>N·mm</small></th><th>Calculated F_LC<small>N</small></th><th>Measured<small>mean ± SD (n)</small></th><th>% error</th><th>Within 2σ?</th><th>Best θ<small>deg</small></th><th>F_LC at best θ<small>N</small></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="stats">
+    <div class="panel stat"><div class="k">Your muscle coefficient (least squares)</div><div class="v" id="sAfit">–</div><div class="sub" id="sAfitS"></div></div>
+    <div class="panel stat"><div class="k">R² of that fit</div><div class="v" id="sR2">–</div><div class="sub" id="sR2s"></div></div>
+    <div class="panel stat"><div class="k">Average % error</div><div class="v" id="sErr">–</div><div class="sub" id="sErrS"></div></div>
+    <div class="panel stat"><div class="k">Strongest predicted</div><div class="v" id="sBest">–</div><div class="sub" id="sBestS"></div></div>
+  </section>
+
+  <section class="charts">
+    <div class="panel">
+      <h2>Calculated vs. measured</h2>
+      <div class="legend"><span><i style="background:var(--air)"></i>Calculated (± uncertainty)</span><span><i style="background:var(--gold);outline:1px solid var(--gold-dk)"></i>Measured (mean ± SD)</span></div>
+      <div class="chart-wrap"><canvas id="cBars" aria-label="Calculated and measured force for each orientation"></canvas></div>
+    </div>
+    <div class="panel">
+      <h2>Force vs. muscle angle, orientation <span id="angOri">A</span></h2>
+      <div class="legend"><span><i style="background:var(--air);height:3px;vertical-align:3px"></i>Predicted F_LC</span><span>● your angle</span><span>★ best angle</span></div>
+      <div class="chart-wrap"><canvas id="cAng" aria-label="Predicted force as the muscle angle changes"></canvas></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="math-head">
+      <h2 style="margin:0">3. Show the math</h2>
+      <label style="font-size:.9rem">Orientation <select id="mathOri"></select></label>
+    </div>
+    <div class="math" id="math"></div>
+  </section>
+
+  <section class="panel">
+    <h2>4. Leaderboard</h2>
+    <p class="hint">Load your team's squeezes from the scoreboard into the Measured column (the 5 most recent for each orientation), or send your calculated forces to the scoreboard's "Calculated vs. measured" board.</p>
+    <div class="lb">
+      <label>Class<input type="text" id="lbClass" value="main"></label>
+      <label>Team slot<select id="lbTeam"></select></label>
+    </div>
+    <div class="buttons">
+      <button type="button" id="loadBtn">Load our squeezes</button>
+      <button type="button" class="primary" id="sendBtn">Send calculated forces</button>
+      <span class="status" id="lbStatus"></span>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const LABELS = ["A", "B", "C", "D", "E", "F", "G"];
+  const DB_URL = "https://jaws-leaderboard-default-rtdb.firebaseio.com";
+  const STORE = "jaw-calculator-v1";
+  const QN = ["θ", "R_MX", "R_MY", "R_LC", "b1", "b2", "x1", "x2"];
+
+  // ---------- example (same numbers as the MATLAB app's example) ----------
+  function example() {
+    return {
+      team: "Example team", mode: 1, a: -1.6, sL: 0.5, sA: 1.0, sT: 2.0, isExample: true,
+      geom: [[5, 22, 12, 95, 25, 24, 15, 16], [8, 26, 12, 95, 25, 24, 14, 14], [10, 34, 12, 95, 25, 24, 13, 14],
+             [30, 18, 14, 95, 25, 24, 17, 17], [20, 28, 16, 95, 25, 24, 14, 15], [12, 31, 14, 95, 25, 24, 12, 13],
+             [18, 25, 15, 95, 25, 24, 15, 15]],
+      meas: [[9.1, 9.6, 8.8], [11.2, 10.4, 11.0], [14.8, 15.5, 14.1], [7.9, 8.6, 8.1], [12.9, 13.8, 12.2], [15.9, 16.8, 16.1], []]
+    };
+  }
+  function blank() {
+    return { team: "", mode: 1, a: -1.6, sL: 0.5, sA: 1.0, sT: 2.0, isExample: false,
+             geom: LABELS.map(() => Array(8).fill(NaN)), meas: LABELS.map(() => []) };
+  }
+  let D;
+  try { D = JSON.parse(localStorage.getItem(STORE)); } catch (e) { D = null; }
+  if (!D || !Array.isArray(D.geom)) D = example();
+  D.geom = D.geom.map(r => r.map(v => v === null ? NaN : v));
+  function save() { try { localStorage.setItem(STORE, JSON.stringify(D)); } catch (e) {} }
+
+  // ---------- inputs ----------
+  function buildInputs() {
+    $("geo").querySelector("tbody").innerHTML = LABELS.map((L, i) =>
+      "<tr><td>" + L + "</td>" + D.geom[i].map((v, j) =>
+        "<td><input type='number' step='any' data-r='" + i + "' data-c='" + j + "' aria-label='" + L + " " + QN[j] + "' value='" + (isFinite(v) ? v : "") + "'></td>").join("") +
+      "<td><input class='meas' type='text' inputmode='decimal' data-m='" + i + "' aria-label='" + L + " measured squeezes' value='" + D.meas[i].join(", ") + "'></td></tr>").join("");
+    $("team").value = D.team; $("mode").value = String(D.mode); $("a").value = D.a;
+    $("sL").value = D.sL; $("sA").value = D.sA; $("sT").value = D.sT;
+    $("exNote").hidden = !D.isExample;
+  }
+  function parseMeas(s) { return String(s).split(/[,;\s]+/).map(parseFloat).filter(v => isFinite(v)); }
+  function readInputs() {
+    document.querySelectorAll("#geo input[data-r]").forEach(el => { const v = parseFloat(el.value); D.geom[+el.dataset.r][+el.dataset.c] = isFinite(v) ? v : NaN; });
+    document.querySelectorAll("#geo input[data-m]").forEach(el => D.meas[+el.dataset.m] = parseMeas(el.value));
+    D.team = $("team").value; D.mode = +$("mode").value;
+    const num = (id, d) => { const v = parseFloat($(id).value); return isFinite(v) ? v : d; };
+    D.a = num("a", -1.6); D.sL = Math.max(0, num("sL", 0)); D.sA = Math.max(0, num("sA", 0)); D.sT = Math.max(0, num("sT", 0));
+  }
+
+  // ---------- the model (same equations as jaw_force_app.m) ----------
+  const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
+  const sd = a => { if (a.length < 2) return 0; const m = mean(a); return Math.sqrt(a.reduce((s, x) => s + (x - m) ** 2, 0) / (a.length - 1)); };
+  function model() {
+    const c = D.mode === 2 ? 0.5 : 1, a = D.a;
+    const sig = [D.sT * Math.PI / 180, D.sA, D.sA, D.sA, D.sL, D.sL, D.sL, D.sL];
+    const rows = D.geom.map((g, i) => {
+      const [thD, RMX, RMY, RLC, b1, b2, x1, x2] = g, th = thD * Math.PI / 180;
+      const R = { i, label: LABELS[i], valid: g.every(v => isFinite(v)) && RLC > 0 };
+      const m = D.meas[i];
+      R.measN = m.length; R.measMean = m.length ? mean(m) : NaN; R.measSD = m.length > 1 ? sd(m) : (m.length ? 0 : NaN);
+      if (!R.valid) return R;
+      R.FM1 = a * (x1 - b1); R.FM2 = a * (x2 - b2); R.FM = c * (R.FM1 + R.FM2);
+      R.arm = RMX * Math.cos(th) + RMY * Math.sin(th);
+      R.tau = R.FM * R.arm; R.F = R.tau / RLC;
+      const dx = c * a * R.arm / RLC;
+      R.dF = [R.FM * (RMY * Math.cos(th) - RMX * Math.sin(th)) / RLC, R.FM * Math.cos(th) / RLC, R.FM * Math.sin(th) / RLC, -R.F / RLC, -dx, -dx, dx, dx];
+      R.contrib = R.dF.map((d, q) => (d * sig[q]) ** 2);
+      R.sigF = Math.sqrt(R.contrib.reduce((s, x) => s + x, 0));
+      R.thetaBest = Math.atan2(RMY, RMX) * 180 / Math.PI;
+      R.Fbest = R.FM * Math.hypot(RMX, RMY) / RLC;
+      R.grad = [R.FM * Math.cos(th) / RLC, R.FM * Math.sin(th) / RLC];
+      R.u = c * ((b1 - x1) + (b2 - x2)) * R.arm / RLC;
+      if (R.measN > 0 && R.F > 0) { R.pctErr = Math.abs(R.measMean - R.F) / R.F * 100; R.within = Math.abs(R.measMean - R.F) <= 2 * R.sigF; }
+      return R;
+    });
+    // least squares: F = k u, a_fit = -k
+    const U = [], Fm = [];
+    rows.forEach(R => { if (R.valid && isFinite(R.u)) D.meas[R.i].forEach(v => { U.push(R.u); Fm.push(v); }); });
+    const M = { rows, sig, c, U, Fm, k: NaN, aFit: NaN, R2: NaN };
+    const su2 = U.reduce((s, u) => s + u * u, 0);
+    if (U.length >= 2 && su2 > 0) {
+      M.k = U.reduce((s, u, j) => s + u * Fm[j], 0) / su2; M.aFit = -M.k;
+      const mF = mean(Fm), ssr = Fm.reduce((s, f, j) => s + (f - M.k * U[j]) ** 2, 0), sst = Fm.reduce((s, f) => s + (f - mF) ** 2, 0);
+      if (sst > 0) M.R2 = 1 - ssr / sst;
+    }
+    return M;
+  }
+
+  // ---------- output ----------
+  const f = (n, d) => isFinite(n) ? (Math.abs(n) < 0.5 * 10 ** -d ? 0 : n).toFixed(d) : "–";
+  let M;
+  function update() {
+    readInputs(); save();
+    M = model();
+    const rows = M.rows;
+    $("res").querySelector("tbody").innerHTML = rows.map(R => {
+      if (!R.valid) return "<tr><td>" + R.label + "</td><td colspan='8' style='color:var(--muted)'>Fill in all 8 measurements to calculate</td></tr>";
+      const meas = R.measN ? f(R.measMean, 2) + " ± " + f(R.measSD, 2) + " (" + R.measN + ")" : "–";
+      const w = R.within === undefined ? "–" : R.within ? "<span class='ok'>Yes</span>" : "<span class='bad'>No</span>";
+      return "<tr><td>" + R.label + "</td><td>" + f(R.FM, 2) + "</td><td>" + f(R.tau, 1) + "</td><td><b>" + f(R.F, 2) + "</b> ± " + f(R.sigF, 2) + "</td><td>" + meas +
+        "</td><td>" + (isFinite(R.pctErr) ? f(R.pctErr, 1) + "%" : "–") + "</td><td>" + w + "</td><td>" + f(R.thetaBest, 1) + "</td><td>" + f(R.Fbest, 2) + "</td></tr>";
+    }).join("");
+
+    $("sAfit").innerHTML = isFinite(M.aFit) ? f(M.aFit, 2) + "<small>N/mm</small>" : "–";
+    $("sAfitS").textContent = isFinite(M.aFit) ? "class value a = " + f(D.a, 2) + " N/mm" : "needs measured squeezes";
+    $("sR2").textContent = f(M.R2, 3);
+    $("sR2s").textContent = M.U.length ? M.U.length + " squeezes" : "";
+    const errs = rows.filter(R => isFinite(R.pctErr));
+    $("sErr").innerHTML = errs.length ? f(mean(errs.map(R => R.pctErr)), 1) + "<small>%</small>" : "–";
+    $("sErrS").textContent = errs.length ? "over " + errs.length + " orientation" + (errs.length > 1 ? "s" : "") : "needs measured squeezes";
+    const valid = rows.filter(R => R.valid);
+    const top = valid.length ? valid.reduce((a, b) => b.F > a.F ? b : a) : null;
+    $("sBest").innerHTML = top ? f(top.F, 2) + "<small>N</small>" : "–";
+    $("sBestS").textContent = top ? "orientation " + top.label : "";
+
+    const sel = $("mathOri"), cur = sel.value || "A";
+    sel.innerHTML = LABELS.map(L => "<option" + (L === cur ? " selected" : "") + ">" + L + "</option>").join("");
+    renderMath(LABELS.indexOf(sel.value));
+    $("exNote").hidden = !D.isExample;
+    drawAll();
+  }
+
+  function renderMath(i) {
+    const R = M.rows[i], g = D.geom[i], el = $("math");
+    $("angOri").textContent = LABELS[i];
+    if (!R.valid) { el.innerHTML = "<p>Orientation " + LABELS[i] + " is missing measurements in the Jaw setup table.</p>"; return; }
+    const [th, RMX, RMY, RLC, b1, b2, x1, x2] = g;
+    const Fv = [-R.FM * Math.sin(th * Math.PI / 180), R.FM * Math.cos(th * Math.PI / 180)];
+    const tot = R.contrib.reduce((s, x) => s + x, 0) || 1;
+    const big = R.contrib.indexOf(Math.max(...R.contrib));
+    const units = ["N/rad", "N/mm", "N/mm", "N/mm", "N/mm", "N/mm", "N/mm", "N/mm"];
+    const sq = M.sig.map((s, q) => q === 0 ? f(s, 3) + " rad" : f(s, 1) + " mm");
+    const s = [];
+    s.push("<section><h3>1. Muscle force <small>(linear McKibben model)</small></h3>" +
+      "<p class='eq'>F_M1 = a(x1 − b1) = " + f(D.a, 2) + " × (" + f(x1, 1) + " − " + f(b1, 1) + ") = " + f(R.FM1, 2) + " N</p>" +
+      "<p class='eq'>F_M2 = a(x2 − b2) = " + f(D.a, 2) + " × (" + f(x2, 1) + " − " + f(b2, 1) + ") = " + f(R.FM2, 2) + " N</p>" +
+      "<p class='eq'>" + (M.c === 1 ? "F_M = F_M1 + F_M2 (both muscles pull)" : "F_M = (F_M1 + F_M2) ÷ 2 (average of both muscles)") + " = <b>" + f(R.FM, 2) + " N</b></p></section>");
+    s.push("<section><h3>2. Torque as a cross product <small>(Calc III: vectors)</small></h3>" +
+      "<p>Position of the muscle attachment from the pivot: r = ⟨R_MX, R_MY, 0⟩ = ⟨" + f(RMX, 1) + ", " + f(RMY, 1) + ", 0⟩ mm</p>" +
+      "<p>Muscle force along the muscle, θ = " + f(th, 1) + "° from vertical: F = F_M⟨−sin θ, cos θ, 0⟩ = ⟨" + f(Fv[0], 2) + ", " + f(Fv[1], 2) + ", 0⟩ N</p>" +
+      "<p class='eq'>τ = r × F = (r_x F_y − r_y F_x) k = (" + f(RMX, 1) + ")(" + f(Fv[1], 2) + ") − (" + f(RMY, 1) + ")(" + f(Fv[0], 2) + ") = <b>" + f(R.tau, 1) + " N·mm</b></p>" +
+      "<p>Expanding gives F_M(R_MX cos θ + R_MY sin θ), the muscle term in the class moment equation.</p></section>");
+    s.push("<section><h3>3. Moment balance → predicted load cell force</h3>" +
+      "<p class='eq'>ΣM_A = −F_M sin θ · R_MY − F_M cos θ · R_MX + F_LC · R_LC = 0</p>" +
+      "<p class='eq'>F_LC = τ ÷ R_LC = " + f(R.tau, 1) + " ÷ " + f(RLC, 1) + " = <b>" + f(R.F, 2) + " N</b></p></section>");
+    s.push("<section><h3>4. Best muscle angle <small>(Calc I: optimization)</small></h3>" +
+      "<p class='eq'>F_LC(θ) = (F_M ÷ R_LC)(R_MX cos θ + R_MY sin θ)</p>" +
+      "<p class='eq'>dF_LC/dθ = (F_M ÷ R_LC)(−R_MX sin θ + R_MY cos θ) = 0 → tan θ* = R_MY ÷ R_MX = " + f(RMY, 1) + " ÷ " + f(RMX, 1) + " → θ* = <b>" + f(R.thetaBest, 1) + "°</b></p>" +
+      "<p>The second derivative is negative there, so it is a maximum: F_LC(θ*) = (F_M ÷ R_LC)√(R_MX² + R_MY²) = " + f(R.Fbest, 2) + " N (" + (R.F ? (R.Fbest / R.F - 1 >= 0 ? "+" : "") + f((R.Fbest / R.F - 1) * 100, 1) + "% vs. your angle" : "") + ")</p></section>");
+    s.push("<section><h3>5. Where to move the attachment point <small>(Calc III: gradient)</small></h3>" +
+      "<p class='eq'>∇F_LC = ⟨∂F/∂R_MX, ∂F/∂R_MY⟩ = (F_M ÷ R_LC)⟨cos θ, sin θ⟩ = ⟨" + f(R.grad[0], 3) + ", " + f(R.grad[1], 3) + "⟩ N per mm</p>" +
+      "<p>Moving the attachment 1 mm in the gradient direction adds about " + f(Math.hypot(...R.grad), 3) + " N. The gradient is perpendicular to the muscle's line of pull, so the best move lengthens the lever arm.</p></section>");
+    s.push("<section><h3>6. Uncertainty from partial derivatives <small>(Calc III: error propagation)</small></h3>" +
+      "<p class='eq'>σ_F = √( Σ (∂F/∂q · σ_q)² )</p><table><tr><th>q</th><th>∂F/∂q</th><th>σ_q</th><th>(∂F/∂q · σ_q)²</th><th>Share</th></tr>" +
+      R.dF.map((d, q) => "<tr><td>" + QN[q] + "</td><td class='r'>" + f(d, 3) + " " + units[q] + "</td><td class='r'>" + sq[q] + "</td><td class='r'>" + f(R.contrib[q], 4) + "</td><td class='r'>" + f(100 * R.contrib[q] / tot, 1) + "%</td></tr>").join("") +
+      "</table><p class='eq'>σ_F = " + f(R.sigF, 2) + " N → F_LC = <b>" + f(R.F, 2) + " ± " + f(R.sigF, 2) + " N</b> (about 95%: ± " + f(2 * R.sigF, 2) + " N)</p>" +
+      "<p>Biggest source of uncertainty: " + QN[big] + ". Measure it most carefully.</p></section>");
+    let cmp = "<section><h3>7. Compare with the load cell</h3>";
+    if (R.measN > 0) {
+      cmp += "<p class='eq'>Measured: " + f(R.measMean, 2) + " N average (SD " + f(R.measSD, 2) + " N, " + R.measN + " squeeze" + (R.measN > 1 ? "s" : "") + ")</p>" +
+        "<p class='eq'>% error = |measured − calculated| ÷ calculated × 100 = " + f(R.pctErr, 1) + "%</p>" +
+        (R.within ? "<p>The measurement is within 2σ_F of the prediction, so it is consistent with the model.</p>"
+                  : "<p>The measurement is outside 2σ_F, so something the model leaves out matters here (friction, muscle stretch, bending, the linear muscle model).</p>");
+    } else cmp += "<p>No measured squeezes for this orientation yet.</p>";
+    s.push(cmp + "</section>");
+    let ls = "<section><h3>8. Your muscle coefficient from least squares <small>(all orientations)</small></h3>" +
+      "<p class='eq'>Model: F = k·u, u = c(b1 − x1 + b2 − x2)(R_MX cos θ + R_MY sin θ) ÷ R_LC</p>" +
+      "<p class='eq'>Minimize S(k) = Σ(F_i − k u_i)² → dS/dk = 0 → k = Σ(u_i F_i) ÷ Σ(u_i²)</p>";
+    ls += isFinite(M.k) ? "<p class='eq'>k = " + f(M.k, 3) + " N/mm → a_fit = −k = <b>" + f(M.aFit, 2) + " N/mm</b> (class value a = " + f(D.a, 2) + "), R² = " + f(M.R2, 3) + " from " + M.U.length + " squeezes</p>"
+                        : "<p>Needs measured squeezes for at least one orientation.</p>";
+    s.push(ls + "</section>");
+    el.innerHTML = s.join("");
+  }
+
+  // ---------- charts ----------
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  function nice(range, count) { const r = range / count, p = 10 ** Math.floor(Math.log10(r)), q = r / p; return (q < 1.5 ? 1 : q < 3 ? 2 : q < 7 ? 5 : 10) * p; }
+  function setup(id) {
+    const cv = $(id), box = cv.parentElement.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    cv.width = Math.round(box.width * dpr); cv.height = Math.round(box.height * dpr);
+    const ctx = cv.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = css("--panel"); ctx.fillRect(0, 0, box.width, box.height);
+    return { cv, ctx, W: box.width, H: box.height };
+  }
+  function axes(ctx, L, T, pw, ph, yMax, ys, yLabel) {
+    ctx.font = "12px Helvetica, Arial, sans-serif"; ctx.strokeStyle = css("--line"); ctx.fillStyle = css("--muted"); ctx.lineWidth = 1;
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    for (let v = 0; v <= yMax + 1e-9; v += ys) { const y = Math.round(T + (1 - v / yMax) * ph) + .5; ctx.beginPath(); ctx.moveTo(L, y); ctx.lineTo(L + pw, y); ctx.stroke(); ctx.fillText(f(v, ys < 1 ? 1 : 0), L - 7, y); }
+    ctx.save(); ctx.translate(13, T + ph / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = "center"; ctx.fillStyle = css("--ink"); ctx.font = "13px Helvetica, Arial, sans-serif"; ctx.fillText(yLabel, 0, 0); ctx.restore();
+  }
+  function rr(ctx, x, y, w, h) { const r = Math.min(3, w / 2, h); ctx.beginPath(); ctx.moveTo(x, y + h); ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r); ctx.lineTo(x + w, y + h); ctx.closePath(); }
+  function drawBars() {
+    const { cv, ctx, W, H } = setup("cBars"), hits = [];
+    const L = 50, R = 10, T = 12, B = 38, pw = W - L - R, ph = H - T - B;
+    const rows = M.rows;
+    let top = Math.max(1, ...rows.map(r => r.valid ? r.F + r.sigF : 0), ...rows.map(r => r.measN ? r.measMean + r.measSD : 0));
+    const ys = nice(top, 5), yMax = Math.ceil(top * 1.08 / ys) * ys, Y = v => T + (1 - v / yMax) * ph;
+    axes(ctx, L, T, pw, ph, yMax, ys, "Load cell force (N)");
+    const slot = pw / 7, w = Math.min(28, slot * 0.34);
+    ctx.textAlign = "center"; ctx.textBaseline = "top"; ctx.font = "13px Helvetica, Arial, sans-serif";
+    rows.forEach((r, i) => {
+      const cx = L + slot * (i + .5);
+      ctx.fillStyle = css("--ink"); ctx.fillText(r.label, cx, T + ph + 8);
+      const bar = (x, v, s, fill, stroke, tip) => {
+        const y = Y(Math.max(v, 0)); rr(ctx, x, y, w, Y(0) - y); ctx.fillStyle = fill; ctx.fill();
+        if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 1; ctx.stroke(); }
+        if (s > 0) { ctx.strokeStyle = css("--ink"); ctx.lineWidth = 1.3; const xm = x + w / 2; ctx.beginPath(); ctx.moveTo(xm, Y(v - s)); ctx.lineTo(xm, Y(v + s)); ctx.moveTo(xm - 4, Y(v + s)); ctx.lineTo(xm + 4, Y(v + s)); ctx.moveTo(xm - 4, Y(v - s)); ctx.lineTo(xm + 4, Y(v - s)); ctx.stroke(); }
+        hits.push({ x: x, y: Math.min(y, Y(v + s)), w: w, h: Y(0) - Math.min(y, Y(v + s)), tip });
+      };
+      if (r.valid) bar(cx - w - 1, r.F, r.sigF, css("--air"), null, "<b>" + r.label + "</b> calculated " + f(r.F, 2) + " ± " + f(r.sigF, 2) + " N");
+      if (r.measN) bar(cx + 1, r.measMean, r.measSD, css("--gold"), css("--gold-dk"), "<b>" + r.label + "</b> measured " + f(r.measMean, 2) + " ± " + f(r.measSD, 2) + " N (" + r.measN + ")" + (isFinite(r.pctErr) ? "<br>" + f(r.pctErr, 1) + "% error" : ""));
+    });
+    cv._hits = hits;
+  }
+  function drawAngle() {
+    const { cv, ctx, W, H } = setup("cAng"), i = LABELS.indexOf($("mathOri").value), r = M.rows[i];
+    const L = 50, Rm = 12, T = 12, B = 42, pw = W - L - Rm, ph = H - T - B;
+    if (!r || !r.valid) { ctx.fillStyle = css("--muted"); ctx.font = "13px Helvetica, Arial, sans-serif"; ctx.textAlign = "center"; ctx.fillText("Fill in orientation " + LABELS[i] + " to see this graph", W / 2, H / 2); cv._hits = []; return; }
+    const [, RMX, RMY, RLC] = D.geom[i];
+    const F = t => r.FM * (RMX * Math.cos(t * Math.PI / 180) + RMY * Math.sin(t * Math.PI / 180)) / RLC;
+    const pts = []; for (let t = 0; t <= 90; t += 0.5) pts.push([t, F(t)]);
+    const top = Math.max(r.Fbest, ...pts.map(p => p[1]), 0.5), ys = nice(top, 5), yMax = Math.ceil(top * 1.1 / ys) * ys;
+    const X = t => L + t / 90 * pw, Y = v => T + (1 - Math.max(v, 0) / yMax) * ph;
+    axes(ctx, L, T, pw, ph, yMax, ys, "Predicted F_LC (N)");
+    ctx.fillStyle = css("--muted"); ctx.textAlign = "center"; ctx.textBaseline = "top"; ctx.font = "12px Helvetica, Arial, sans-serif";
+    for (let t = 0; t <= 90; t += 15) ctx.fillText(t, X(t), T + ph + 7);
+    ctx.fillStyle = css("--ink"); ctx.font = "13px Helvetica, Arial, sans-serif"; ctx.fillText("Muscle angle from vertical, θ (deg)", L + pw / 2, T + ph + 24);
+    ctx.strokeStyle = css("--air"); ctx.lineWidth = 2.2; ctx.beginPath(); pts.forEach((p, k) => k ? ctx.lineTo(X(p[0]), Y(p[1])) : ctx.moveTo(X(p[0]), Y(p[1]))); ctx.stroke();
+    const th = D.geom[i][0];
+    ctx.beginPath(); ctx.arc(X(th), Y(r.F), 5.5, 0, 2 * Math.PI); ctx.fillStyle = css("--air"); ctx.fill(); ctx.strokeStyle = css("--panel"); ctx.lineWidth = 2; ctx.stroke();
+    const sx = X(r.thetaBest), sy = Y(r.Fbest);
+    ctx.beginPath(); for (let k = 0; k < 10; k++) { const ang = -Math.PI / 2 + k * Math.PI / 5, rad = k % 2 ? 4 : 9; ctx.lineTo(sx + rad * Math.cos(ang), sy + rad * Math.sin(ang)); } ctx.closePath();
+    ctx.fillStyle = css("--gold"); ctx.fill(); ctx.strokeStyle = css("--ink"); ctx.lineWidth = 1; ctx.stroke();
+    ctx.font = "bold 12px Helvetica, Arial, sans-serif"; ctx.fillStyle = css("--ink"); ctx.textBaseline = "bottom";
+    ctx.textAlign = sx > L + pw * 0.7 ? "right" : "left";
+    ctx.fillText("best " + f(r.thetaBest, 1) + "°: " + f(r.Fbest, 2) + " N", sx + (ctx.textAlign === "left" ? 10 : -10), sy - 6);
+    cv._hits = [{ x: X(th) - 8, y: Y(r.F) - 8, w: 16, h: 16, tip: "Your angle " + f(th, 1) + "°: " + f(r.F, 2) + " N" }, { x: sx - 10, y: sy - 10, w: 20, h: 20, tip: "Best angle " + f(r.thetaBest, 1) + "°: " + f(r.Fbest, 2) + " N" }];
+  }
+  function drawAll() { drawBars(); drawAngle(); }
+  function hover(id) {
+    const cv = $(id), tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true; cv.parentElement.appendChild(tip);
+    cv.addEventListener("mousemove", e => {
+      const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+      const h = (cv._hits || []).find(h => mx >= h.x - 4 && mx <= h.x + h.w + 4 && my >= h.y - 6 && my <= h.y + h.h);
+      if (!h) { tip.hidden = true; return; }
+      tip.innerHTML = h.tip; tip.hidden = false;
+      let lx = mx + 12; if (lx + tip.offsetWidth > r.width) lx = mx - tip.offsetWidth - 12;
+      tip.style.left = lx + "px"; tip.style.top = Math.max(my - 36, 0) + "px";
+    });
+    cv.addEventListener("mouseleave", () => tip.hidden = true);
+  }
+
+  // ---------- buttons ----------
+  function markEdited() { if (D.isExample) { D.isExample = false; } }
+  document.addEventListener("input", e => { if (e.target.closest("#geo, .settings")) { markEdited(); clearTimeout(update.t); update.t = setTimeout(update, 150); } });
+  document.addEventListener("change", e => { if (e.target.closest("#geo, .settings")) { markEdited(); update(); } });
+  $("mathOri").addEventListener("change", () => { renderMath(LABELS.indexOf($("mathOri").value)); drawAngle(); });
+  $("exBtn").addEventListener("click", () => { D = example(); buildInputs(); update(); });
+  $("clearBtn").addEventListener("click", () => {
+    if ($("clearBtn").dataset.armed) { delete $("clearBtn").dataset.armed; $("clearBtn").textContent = "Clear everything"; D = blank(); buildInputs(); update(); return; }
+    $("clearBtn").dataset.armed = "1"; $("clearBtn").textContent = "Click again to clear";
+    setTimeout(() => { delete $("clearBtn").dataset.armed; $("clearBtn").textContent = "Clear everything"; }, 3000);
+  });
+  $("copyBtn").addEventListener("click", async () => {
+    const head = ["Orientation", "theta (deg)", "R_MX (mm)", "R_MY (mm)", "R_LC (mm)", "b1 (mm)", "b2 (mm)", "x1 (mm)", "x2 (mm)", "F_M (N)", "Torque (N*mm)", "Calculated F_LC (N)", "Uncertainty (N)", "Measured mean (N)", "SD (N)", "n", "% error", "Best angle (deg)"];
+    const lines = [head.join("\t")].concat(M.rows.map(R => [R.label, ...D.geom[R.i].map(v => isFinite(v) ? v : ""),
+      R.valid ? f(R.FM, 2) : "", R.valid ? f(R.tau, 1) : "", R.valid ? f(R.F, 2) : "", R.valid ? f(R.sigF, 2) : "",
+      R.measN ? f(R.measMean, 2) : "", R.measN ? f(R.measSD, 2) : "", R.measN || "", isFinite(R.pctErr) ? f(R.pctErr, 1) : "", R.valid ? f(R.thetaBest, 1) : ""].join("\t")));
+    lines.push("", ["Least-squares a (N/mm)", f(M.aFit, 3)].join("\t"), ["R squared", f(M.R2, 3)].join("\t"), ["Class value a (N/mm)", D.a].join("\t"));
+    try { await navigator.clipboard.writeText(lines.join("\n")); $("status").className = "status"; $("status").textContent = "Copied. Paste into Excel or Google Sheets."; }
+    catch (e) { $("status").className = "status err"; $("status").textContent = "Your browser blocked copying here. Open the page in its own tab and try again."; }
+  });
+
+  // ---------- leaderboard ----------
+  $("lbTeam").innerHTML = Array.from({ length: 10 }, (_, k) => "<option value='team" + (k + 1) + "'>Team " + (k + 1) + "</option>").join("");
+  try { const lb = JSON.parse(localStorage.getItem(STORE + "-lb")); if (lb) { $("lbClass").value = lb.cls; $("lbTeam").value = lb.team; } } catch (e) {}
+  const cls = () => ($("lbClass").value.trim() || "main").replace(/[^a-zA-Z0-9_-]/g, "") || "main";
+  function rememberLb() { try { localStorage.setItem(STORE + "-lb", JSON.stringify({ cls: cls(), team: $("lbTeam").value })); } catch (e) {} }
+  async function loadNames() {
+    try {
+      const r = await fetch(DB_URL + "/jawboard/" + cls() + "/names.json"); const names = r.ok ? (await r.json()) || {} : {};
+      [...$("lbTeam").options].forEach((o, k) => o.textContent = "Team " + (k + 1) + (names[o.value] ? " (" + names[o.value] + ")" : ""));
+    } catch (e) {}
+  }
+  $("lbClass").addEventListener("change", () => { rememberLb(); loadNames(); });
+  $("lbTeam").addEventListener("change", rememberLb);
+  const lbSay = (msg, err) => { $("lbStatus").className = "status" + (err ? " err" : ""); $("lbStatus").textContent = msg; };
+  $("loadBtn").addEventListener("click", async () => {
+    rememberLb(); lbSay("Loading…");
+    try {
+      const r = await fetch(DB_URL + "/jawboard/" + cls() + "/trials.json");
+      if (!r.ok) throw new Error(r.status);
+      const trials = Object.values((await r.json()) || {}).filter(t => t && t.team === $("lbTeam").value && LABELS.includes(t.config));
+      if (!trials.length) { lbSay("No squeezes found for that team in class \"" + cls() + "\".", true); return; }
+      let total = 0;
+      D.meas = LABELS.map(() => []);
+      LABELS.forEach((L, i) => {
+        const v = trials.filter(t => t.config === L).sort((p, q) => (q.t || 0) - (p.t || 0)).slice(0, 5).reverse().map(t => Math.round(t.force * 100) / 100);
+        if (v.length) { D.meas[i] = v; total += v.length; }
+      });
+      markEdited(); buildInputs(); update();
+      lbSay("Loaded " + total + " squeezes.");
+    } catch (e) { lbSay("Couldn't reach the leaderboard. Check your internet connection.", true); }
+  });
+  $("sendBtn").addEventListener("click", async () => {
+    rememberLb();
+    const body = {};
+    M.rows.forEach(R => { if (R.valid && R.F > 0 && R.F < 2000) body[R.label] = Math.round(R.F * 100) / 100; });
+    if (!Object.keys(body).length) { lbSay("No calculated forces to send yet.", true); return; }
+    lbSay("Sending…");
+    try {
+      const r = await fetch(DB_URL + "/jawboard/" + cls() + "/calc/" + $("lbTeam").value + ".json", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      if (!r.ok) throw new Error(r.status);
+      lbSay("Sent " + Object.keys(body).length + " calculated forces (" + Object.keys(body).join(", ") + ") to " + $("lbTeam").selectedOptions[0].textContent + ".");
+    } catch (e) { lbSay("Couldn't send to the leaderboard. Check your internet connection.", true); }
+  });
+
+  hover("cBars"); hover("cAng");
+  window.addEventListener("resize", drawAll);
+  try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", drawAll); } catch (e) {}
+  buildInputs(); update(); loadNames();
+})();
+</script>
+</body>
+</html>

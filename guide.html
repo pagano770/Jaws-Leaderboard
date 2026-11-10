@@ -35,14 +35,14 @@ footer { margin-top: 40px; font-size: 14px; color: #555; }
   <p class="sub">McKibben muscle jaw, Soft Robotics Clinic, Rowan University, Fall 2026</p>
   <hr>
 
-  <p>This page has the links and files for our jaw project. Students use these during the jaw testing and for the muscle tests in Phase 1. Everything runs in a browser. The MATLAB app runs in MATLAB Online, so students don't need MATLAB installed.</p>
+  <p>This page has the links and files for our jaw project. Students use these during the jaw testing and for the muscle tests in Phase 1. Everything runs in a web browser, so there is nothing to install and no sign-in.</p>
 
   <h2>Pages</h2>
   <table>
     <tr><th>Link</th><th>What it does</th></tr>
     <tr><td><a href="./">Scoreboard</a></td><td>Live results for the projector. Ranks teams by strongest bite, by muscle orientation, and by calculated vs. measured force. Students can open it on their phones too.</td></tr>
     <tr><td><a href="./#station">Team station</a></td><td>One per team, on a laptop in Chrome or Edge. Connects to the load cell over USB and saves the peak force of every squeeze.</td></tr>
-    <tr><td><a href="https://matlab.mathworks.com/open/github/v1?repo=pagano770/Jaws-Leaderboard&amp;file=jaw_force_app.m">Jaw force app</a></td><td>MATLAB app for calculating the predicted bite force from the jaw geometry. Sign in with a Rowan account, then type <code>jaw_force_app</code> in the Command Window. "Show the math" goes through each calculation with the team's numbers.</td></tr>
+    <tr><td><a href="tools/jaw-calculator.html">Jaw force calculator</a></td><td>Calculates the predicted bite force for each orientation from the jaw measurements, with the uncertainty, the best muscle angle, and every step of the math shown. It can load a team's squeezes from the scoreboard and send the calculated forces back to it.</td></tr>
     <tr><td><a href="tools/force-pressure.html">Force vs. pressure</a></td><td>Graphs muscle force against pressure at each contraction and fits F = P(c₁ − c₂ε). Paste in the output of the force/pressure logger.</td></tr>
     <tr><td><a href="tools/muscle-pressure.html">Muscle pressure</a></td><td>Graphs pressure over time from the pressure logger and gives the peak pressure and leak rate.</td></tr>
   </table>
@@ -80,6 +80,7 @@ footer { margin-top: 40px; font-size: 14px; color: #555; }
     <li><a href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/SETUP.md">Setup guide</a>: wiring, Firebase, and class day</li>
     <li>Separate board for each class period: add <code>?class=s3</code> to the link, e.g. <a href="./?class=s3">scoreboard</a> and <a href="./?class=s3#station">station</a></li>
     <li>Admin view, for deleting bad readings: <a href="./?admin=1">?admin=1</a></li>
+    <li>MATLAB version of the calculator, for desktop MATLAB: <a href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/jaw_force_app.m">jaw_force_app.m</a></li>
     <li>All files: <a href="https://github.com/pagano770/Jaws-Leaderboard">github.com/pagano770/Jaws-Leaderboard</a></li>
   </ul>
 
