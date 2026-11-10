@@ -10,7 +10,7 @@ Built by the Soft Robotics Clinic, Fall 2026: Chidera Anyanwu, Brandon De La Pue
 - **Team station:** https://pagano770.github.io/Jaws-Leaderboard/#station
 - **Force vs. pressure tool (muscle characterization):** https://pagano770.github.io/Jaws-Leaderboard/tools/force-pressure.html
 - **Muscle pressure graph (pressure over time, leak rate):** https://pagano770.github.io/Jaws-Leaderboard/tools/muscle-pressure.html
-- **Jaw force app (MATLAB Online):** [![Open in MATLAB Online](https://www.mathworks.com/images/responsive/global/open-in-matlab-online.svg)](https://matlab.mathworks.com/open/github/v1?repo=pagano770/Jaws-Leaderboard&file=jaw_force_app.m)
+- **Jaw force calculator:** https://pagano770.github.io/Jaws-Leaderboard/tools/jaw-calculator.html
 
 For a separate board per class period, add `?class=` to both links, for example `…/Jaws-Leaderboard/?class=s3` and `…/Jaws-Leaderboard/?class=s3#station`.
 
@@ -31,18 +31,11 @@ For a separate board per class period, add `?class=` to both links, for example 
 Load cell → HX711 amplifier → Arduino Uno ──USB──> Team station page (Chrome) ──> Firebase ──> Scoreboard
 ```
 
-## Jaw force app (no MATLAB install needed)
+## Jaw force calculator
 
-`jaw_force_app.m` calculates each team's predicted jaw force: muscle force, torque, the moment balance, uncertainty, the best muscle angle, force vs. pressure, and the pressure calibration. It also imports the leaderboard's squeezes so teams can compare calculated and measured force.
+`tools/jaw-calculator.html` works out each team's predicted jaw force in the browser, with no sign-in: muscle force, torque (cross product), the moment balance, uncertainty from partial derivatives, the best muscle angle, and a least-squares muscle coefficient from the team's squeezes. "Show the math" lists every step with the team's numbers. It can load a team's squeezes from the leaderboard and send the calculated forces to the "Calculated vs. measured" board. Teams' numbers are saved in their own browser.
 
-To use it without installing anything:
-
-1. Click the **Open in MATLAB Online** button above (it is also linked from the team station page).
-2. Sign in with your Rowan account. Rowan's campus-wide MATLAB license covers MATLAB Online.
-3. Choose to copy the repository into your MATLAB Drive when asked.
-4. Type `jaw_force_app` in the Command Window and press Enter.
-
-Each student gets their own copy, so changes and saved team files stay in their own MATLAB Drive. If you have desktop MATLAB (R2020b or newer), you can also download `jaw_force_app.m` and run it there.
+It uses the same equations as `jaw_force_app.m`, the MATLAB version, which still works in desktop MATLAB (R2020b or newer) for anyone who wants it.
 
 ## Files
 
@@ -50,7 +43,8 @@ Each student gets their own copy, so changes and saved team files stay in their 
 |---|---|
 | `index.html` | The whole website: scoreboard and team station in one page |
 | `jaw_force_sensor.ino` | Arduino code, uploaded to every team's Uno. Keep it in a folder named `jaw_force_sensor` when opening it in the Arduino IDE |
-| `jaw_force_app.m` | MATLAB app for calculating jaw force (see above) |
+| `tools/jaw-calculator.html` | Jaw force calculator (see above) |
+| `jaw_force_app.m` | MATLAB version of the calculator, for desktop MATLAB |
 | `guide.html` | The project guide page: links to everything |
 | `tools/force-pressure.html` | Muscle force vs. pressure graph and fit (Phase 1) |
 | `arduino/muscle_force_pressure/` | Arduino logger for pressure and force together (Phase 1) |
@@ -85,5 +79,5 @@ Until the Firebase settings are added, the page works but results stay on the co
 
 - **Team stations:** Chrome or Edge on a laptop or desktop (needed to read the sensor over USB)
 - **Scoreboard:** any modern browser, including phones
-- **Jaw force app:** a web browser and a Rowan MathWorks sign-in (MATLAB Online), or desktop MATLAB R2020b or newer
+- **Jaw force calculator:** any modern browser
 - **Arduino library:** "HX711 Arduino Library" by Bogdan Necula

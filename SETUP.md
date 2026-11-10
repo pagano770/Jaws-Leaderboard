@@ -62,9 +62,9 @@ Only one program can use the serial port at a time, so close the Arduino Serial 
 - **Demo mode:** leave `firebase: null`. The page fills itself with six fake teams and fake forces, adds a new simulated squeeze every few seconds (untick **Simulate live squeezes** to stop), and the station page gets a **Simulate a squeeze** button that runs a fake squeeze through the real detection code. Data stays in that browser only. **Reset demo data** starts over.
 - **Switching views:** the link at the top right flips between scoreboard and station. You can also add `#station` to the end of the address.
 
-## 6. Jaw force app and muscle tools
+## 6. Jaw force calculator and muscle tools
 
-- **Jaw force app:** students click **Open in MATLAB Online** on the [guide page](https://pagano770.github.io/Jaws-Leaderboard/guide.html), sign in with their Rowan account, and type `jaw_force_app`. Nothing to install.
+- **Jaw force calculator:** students open `tools/jaw-calculator.html` from the [project page](https://pagano770.github.io/Jaws-Leaderboard/guide.html) or the link on the team station. Nothing to install and no sign-in. Under **Leaderboard** they pick their class and team slot to load their squeezes or send their calculated forces to the scoreboard.
 - **Muscle force vs. pressure (Phase 1):** wire the 0–80 psi pressure sensor to A0 on the same Uno as the HX711, upload `arduino/muscle_force_pressure/muscle_force_pressure.ino`, and paste its output into `tools/force-pressure.html`. The guide page has the full test steps. It uses the same HX711 pins (DT 3, SCK 2) as the leaderboard rigs. If you borrow a leaderboard Uno, upload `jaw_force_sensor.ino` again before class day.
 - **Muscle pressure and leak tests:** wire the Adafruit MPRLS sensor to the UNO R4 WiFi over I²C (Qwiic/STEMMA cable or SDA/SCL), install **Adafruit MPRLS Library** in Library Manager, and upload `arduino/muscle_pressure_logger/muscle_pressure_logger.ino`. Type `r` in the Serial Monitor (115200 baud) to record 20 seconds, then paste the DATA line into `tools/muscle-pressure.html`. Stay under 9 psi.
 
