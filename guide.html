@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>JAWS Project Guide</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐢</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --brown: #57150B; --gold: #FFCC00;
+  --bg: #F7F3EC; --surface: #FFFFFF; --ink: #2B1511; --muted: #6E5A54; --line: #E0D5CA;
+  --accent: var(--brown); --on-accent: #FFFFFF; --tag: #F3E7C2; --tag-ink: #5C4400;
+  --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1B0E0B; --surface: #27150F; --ink: #F5EDE4; --muted: #C2ADA3; --line: #432920;
+    --accent: var(--gold); --on-accent: var(--brown); --tag: #3A2E0C; --tag-ink: #FFDD66; color-scheme: dark;
+  }
+}
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 1.0625rem/1.55 var(--body); }
+a { color: var(--accent); text-underline-offset: 3px; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.wrap {
+  max-width: 64rem; margin: 0 auto;
+  padding: max(1.25rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(3rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+}
+.top { border-bottom: 4px solid var(--brown); box-shadow: 0 4px 0 var(--gold); padding-bottom: .9rem; margin-bottom: 1.75rem; }
+h1 { font: 700 clamp(2.4rem, 6vw, 3.75rem)/.95 var(--display); margin: 0; }
+.lede { color: var(--muted); max-width: 46rem; margin: .6rem 0 0; }
+h2 { font: 700 1.9rem/1.1 var(--display); margin: 2.25rem 0 .25rem; }
+h2 + p { color: var(--muted); margin: 0 0 1rem; max-width: 46rem; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 1rem; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 1.1rem 1.2rem; display: flex; flex-direction: column; gap: .5rem; min-width: 0; }
+.card h3 { font: 700 1.45rem/1.1 var(--display); margin: 0; }
+.card p { margin: 0; font-size: .97rem; }
+.card .who { font-size: .82rem; color: var(--muted); }
+.card .go { margin-top: auto; display: flex; flex-wrap: wrap; gap: .5rem; padding-top: .4rem; }
+.btn { display: inline-block; background: var(--accent); color: var(--on-accent); font-weight: 700; text-decoration: none; padding: .5rem .9rem; border-radius: 6px; font-size: .95rem; }
+.btn.alt { background: transparent; color: var(--ink); border: 1.5px solid var(--line); }
+.btn:hover { filter: brightness(1.08); }
+.tag { align-self: flex-start; font-size: .75rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; background: var(--tag); color: var(--tag-ink); padding: .15rem .5rem; border-radius: 4px; }
+.flow { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.2rem; overflow-x: auto; }
+.flow code { font: .9rem/1.6 ui-monospace, Consolas, monospace; white-space: pre; }
+ol.steps { margin: 0; padding-left: 1.3rem; display: flex; flex-direction: column; gap: .45rem; max-width: 50rem; }
+table { border-collapse: collapse; width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; font-size: .95rem; }
+th, td { text-align: left; padding: .6rem .8rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+tr:last-child td { border-bottom: 0; }
+td code { font-size: .88rem; }
+.scroll { overflow-x: auto; border-radius: 10px; }
+footer { margin-top: 2.5rem; color: var(--muted); font-size: .9rem; border-top: 1px solid var(--line); padding-top: 1rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>JAWS Project Guide</h1>
+    <p class="lede">Everything for the McKibben-muscle jaw project in one place: the live leaderboard, the force calculation app, the muscle characterization tools and the Arduino code. Nothing needs to be installed; it all runs in a web browser.</p>
+  </header>
+
+  <div class="flow"><code>Muscle (Phase 1)                       Jaw (Phases 2–3)
+pressure sensor + load cell            load cell on the jaw
+   → Force vs. Pressure tool              → Team station → Leaderboard
+   → F = P(c₁ − c₂ε)          ────────→   Jaw force app: predicted vs. measured</code></div>
+
+  <h2>Class day</h2>
+  <p>Used during testing. Teams record squeezes at their station, and the scoreboard updates live on the projector and phones.</p>
+  <div class="cards">
+    <div class="card">
+      <h3>Scoreboard</h3>
+      <span class="who">Projector and phones</span>
+      <p>Ranks teams by strongest bite, by muscle orientation (A–G), and by how close their calculated force came to the measured one.</p>
+      <div class="go"><a class="btn" href="./">Open scoreboard</a></div>
+    </div>
+    <div class="card">
+      <h3>Team station</h3>
+      <span class="who">One laptop per team, Chrome or Edge</span>
+      <p>Connects to the team's load cell over USB, saves the peak of every squeeze, and takes the team's calculated force for each orientation.</p>
+      <div class="go"><a class="btn" href="./#station">Open team station</a></div>
+    </div>
+  </div>
+
+  <h2>Calculating the jaw force</h2>
+  <p>Students predict the bite force from their jaw geometry, then compare it with the load cell.</p>
+  <div class="cards">
+    <div class="card">
+      <span class="tag">MATLAB Online · no install</span>
+      <h3>Jaw force app</h3>
+      <span class="who">Students, sign in with their Rowan account</span>
+      <p>Muscle force, torque (cross product), moment balance, uncertainty from partial derivatives, best muscle angle, force vs. pressure and pressure calibration. "Show the math" prints every step with the team's numbers. It imports squeezes from the leaderboard.</p>
+      <p>After it opens, type <code>jaw_force_app</code> in the Command Window.</p>
+      <div class="go">
+        <a class="btn" href="https://matlab.mathworks.com/open/github/v1?repo=pagano770/Jaws-Leaderboard&amp;file=jaw_force_app.m" target="_blank" rel="noopener">Open in MATLAB Online</a>
+        <a class="btn alt" href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/jaw_force_app.m">View code</a>
+      </div>
+    </div>
+  </div>
+
+  <h2>Characterizing the muscle (Phase 1)</h2>
+  <p>Measures how much force the muscle makes at each pressure and length, so the jaw model can use a fitted formula in place of a = −1.6 N/mm.</p>
+  <div class="cards">
+    <div class="card">
+      <h3>Force vs. pressure tool</h3>
+      <span class="who">Any browser</span>
+      <p>Paste the logger's STEP lines. It plots force against pressure at each contraction, fits F = P(c₁ − c₂ε), and reports R², error, efficiency vs. the ideal muscle, repeatability and hysteresis, with every calculation shown.</p>
+      <div class="go"><a class="btn" href="tools/force-pressure.html">Open the tool</a></div>
+    </div>
+    <div class="card">
+      <h3>Force–pressure logger</h3>
+      <span class="who">Arduino Uno + HX711 + 0–80 psi sensor on A0</span>
+      <p>Reads pressure and force together. Type <code>t</code> to zero, <code>c12</code> to set the contraction in mm, <code>n</code> for a new trial, and <code>h</code> at each syringe step to save a 2-second average.</p>
+      <div class="go"><a class="btn alt" href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/arduino/muscle_force_pressure/muscle_force_pressure.ino">View or download</a></div>
+    </div>
+  </div>
+
+  <h3 style="font:700 1.35rem var(--display);margin:1.5rem 0 .5rem">Running the muscle test</h3>
+  <ol class="steps">
+    <li>Hang the muscle from the load cell with the syringe, tee and pressure sensor on one air line. Upload the logger and open the Serial Monitor at 115200 baud, "Newline".</li>
+    <li>With the muscle deflated and nothing pulling, send <code>t</code>.</li>
+    <li>Set the length with the turnbuckle, measure how much the muscle has shortened, and send <code>c</code> plus that number in mm.</li>
+    <li>Step the syringe up through about six pressures, sending <code>h</code> at each one, then come back down through a few.</li>
+    <li>Repeat for at least two more lengths, and send <code>n</code> before each repeat trial.</li>
+    <li>Paste the Serial Monitor output into the Force vs. pressure tool and enter the muscle's L₀, D₀ and braid turns.</li>
+  </ol>
+
+  <h2>Hardware and setup</h2>
+  <p>One-time setup for the sensors, the database and this website.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>File</th><th>What it is</th><th>Used for</th></tr></thead>
+    <tbody>
+      <tr><td><a href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/jaw_force_sensor.ino"><code>jaw_force_sensor.ino</code></a></td><td>Load cell code for every team's Uno. Calibrated from the station page.</td><td>Leaderboard</td></tr>
+      <tr><td><a href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/arduino/muscle_force_pressure/muscle_force_pressure.ino"><code>muscle_force_pressure.ino</code></a></td><td>Pressure + load cell logger. Needs your load cell factor in newtons.</td><td>Phase 1 muscle test</td></tr>
+      <tr><td><a href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/jaw_force_app.m"><code>jaw_force_app.m</code></a></td><td>The MATLAB app (MATLAB Online or desktop R2020b+)</td><td>Calculations</td></tr>
+      <tr><td><a href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/SETUP.md"><code>SETUP.md</code></a></td><td>Wiring, Firebase, GitHub Pages and class-day steps</td><td>Setup</td></tr>
+      <tr><td><a href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/database.rules.json"><code>database.rules.json</code></a></td><td>Firebase security rules</td><td>Setup</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>Useful links</h2>
+  <p>Extra leaderboard views.</p>
+  <ol class="steps" style="list-style:none;padding:0">
+    <li><b>Separate class period:</b> add <code>?class=s3</code> to both links, for example <a href="./?class=s3">scoreboard</a> and <a href="./?class=s3#station">station</a>.</li>
+    <li><b>Admin view</b> (delete bad squeezes, clear a class): <a href="./?admin=1">./?admin=1</a></li>
+    <li><b>All files:</b> <a href="https://github.com/pagano770/Jaws-Leaderboard">github.com/pagano770/Jaws-Leaderboard</a></li>
+  </ol>
+
+  <footer>Built by the Soft Robotics Clinic, Fall 2026: Chidera Anyanwu, Brandon De La Puente, Blanca Rivera, Kieran McGovern, Gabriella Pagano, David Weaver.</footer>
+</div>
+</body>
+</html>

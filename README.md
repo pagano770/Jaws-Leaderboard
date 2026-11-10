@@ -4,8 +4,11 @@ A live classroom leaderboard for the McKibben-muscle jaw project. Each team's lo
 
 Built by the Soft Robotics Clinic, Fall 2026: Chidera Anyanwu, Brandon De La Puente, Blanca Rivera, Kieran McGovern, Gabriella Pagano, David Weaver.
 
+**Start here: [JAWS Project Guide](https://pagano770.github.io/Jaws-Leaderboard/guide.html)** (every tool, link and file on one page)
+
 - **Scoreboard (projector):** https://pagano770.github.io/Jaws-Leaderboard/
 - **Team station:** https://pagano770.github.io/Jaws-Leaderboard/#station
+- **Force vs. pressure tool (muscle characterization):** https://pagano770.github.io/Jaws-Leaderboard/tools/force-pressure.html
 - **Jaw force app (MATLAB Online):** [![Open in MATLAB Online](https://www.mathworks.com/images/responsive/global/open-in-matlab-online.svg)](https://matlab.mathworks.com/open/github/v1?repo=pagano770/Jaws-Leaderboard&file=jaw_force_app.m)
 
 For a separate board per class period, add `?class=` to both links, for example `…/Jaws-Leaderboard/?class=s3` and `…/Jaws-Leaderboard/?class=s3#station`.
@@ -47,9 +50,20 @@ Each student gets their own copy, so changes and saved team files stay in their 
 | `index.html` | The whole website: scoreboard and team station in one page |
 | `jaw_force_sensor.ino` | Arduino code, uploaded to every team's Uno. Keep it in a folder named `jaw_force_sensor` when opening it in the Arduino IDE |
 | `jaw_force_app.m` | MATLAB app for calculating jaw force (see above) |
+| `guide.html` | The project guide page: links to everything |
+| `tools/force-pressure.html` | Muscle force vs. pressure graph and fit (Phase 1) |
+| `arduino/muscle_force_pressure/` | Arduino logger for pressure and force together (Phase 1) |
 | `database.rules.json` | Security rules to paste into Firebase |
 | `SETUP.md` | Step-by-step setup and classroom instructions |
 | `README.md` | This page |
+
+## Muscle characterization (Phase 1)
+
+To measure how much force the muscle makes at each pressure and length:
+
+1. Upload `arduino/muscle_force_pressure/muscle_force_pressure.ino`. First set your HX711 pins, load cell factor (in newtons) and pressure-sensor calibration at the top.
+2. In the Serial Monitor (115200 baud, "Newline"): `t` to zero, `c12` to set the contraction in mm, `h` at each syringe step, `n` for a new trial.
+3. Paste the output into the [Force vs. pressure tool](https://pagano770.github.io/Jaws-Leaderboard/tools/force-pressure.html), which fits F = P(c₁ − c₂ε).
 
 ## Getting started
 

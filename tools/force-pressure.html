@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Muscle Force vs. Pressure</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root {
+  --bg: #f6f1e9; --panel: #ffffff; --ink: #2a1a12; --muted: #6e5a4c; --line: #e4d9cb;
+  --air: #4f2c1d; --air-soft: rgba(79,44,29,0.10); --gold: #ffcc00;
+  --warn-bg: #fff4cc; --warn-ink: #6b4f00;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4;
+  --font-display: "Barlow", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1a120d; --panel: #251a14; --ink: #f4ece3; --muted: #bba795; --line: #3d2c22;
+    --air: #ffcc00; --air-soft: rgba(255,204,0,0.12); --warn-bg: #3a2e0c; --warn-ink: #ffdd66;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1a120d; --panel: #251a14; --ink: #f4ece3; --muted: #bba795; --line: #3d2c22;
+  --air: #ffcc00; --air-soft: rgba(255,204,0,0.12); --warn-bg: #3a2e0c; --warn-ink: #ffdd66;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--font-body); }
+.wrap {
+  max-width: 1080px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px;
+  padding: max(24px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(48px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+}
+header { border-left: 5px solid var(--gold); padding-left: 14px; }
+h1 { font: 700 1.9rem var(--font-display); margin: 0; color: var(--air); }
+header p { margin: 4px 0 0; color: var(--muted); max-width: 70ch; }
+header p a, .wrap > a { color: var(--air); }
+h2 { font: 600 1.1rem var(--font-display); margin: 0 0 6px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.tag { align-self: flex-start; font: 500 0.75rem var(--font-mono); letter-spacing: .04em; text-transform: uppercase; background: var(--warn-bg); color: var(--warn-ink); padding: 3px 8px; border-radius: 4px; }
+.charts { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 18px; }
+.chart-wrap { position: relative; height: 420px; }
+canvas { display: block; width: 100%; height: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.82rem; color: var(--muted); margin-bottom: 8px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend svg { flex: none; }
+.tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 9px; font-size: 0.8rem; box-shadow: 0 2px 10px rgba(0,0,0,.12); white-space: nowrap; font-variant-numeric: tabular-nums; z-index: 2; }
+.tip b { font-weight: 600; }
+.stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.stat { padding: 12px 14px; }
+.stat .k { font-size: 0.72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.stat .v { font: 500 1.3rem var(--font-mono); font-variant-numeric: tabular-nums; }
+.stat .v small { font-size: 0.78rem; color: var(--muted); margin-left: 3px; }
+.stat .sub { font-size: 0.78rem; color: var(--muted); }
+.eq { font: 500 1.05rem var(--font-mono); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto; white-space: nowrap; }
+.table-scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 0.88rem; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 500; }
+td.num { font-family: var(--font-mono); }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.calc { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.card { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; background: var(--bg); min-width: 0; }
+.card h3 { font: 600 1rem var(--font-display); margin: 0 0 8px; color: var(--air); }
+.card ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 0.86rem; }
+.card li span { display: block; color: var(--muted); }
+.card code { display: block; font: 0.84rem var(--font-mono); overflow-wrap: anywhere; }
+.input { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 18px; }
+.hint { margin: 0 0 8px; color: var(--muted); font-size: 0.88rem; }
+textarea { width: 100%; height: 260px; resize: vertical; font: 0.8rem var(--font-mono); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+.side { display: flex; flex-direction: column; gap: 12px; }
+.row { display: grid; grid-template-columns: 1fr 110px; align-items: center; gap: 8px; font-size: 0.88rem; }
+.row input, .row select, select { font: 0.9rem var(--font-mono); padding: 5px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); width: 100%; }
+.check { display: flex; gap: 8px; align-items: flex-start; font-size: 0.88rem; }
+.check input { margin-top: 3px; accent-color: var(--air); }
+.check small { display: block; color: var(--muted); }
+.group { border-top: 1px solid var(--line); padding-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.group > b { font: 600 0.8rem var(--font-body); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+button { font: 600 0.88rem var(--font-body); padding: 8px 14px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
+button:hover { border-color: var(--air); color: var(--air); }
+.buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.status { font-size: 0.85rem; color: var(--muted); }
+.status.err { color: var(--warn-ink); background: var(--warn-bg); padding: 8px 10px; border-radius: 6px; }
+textarea:focus, input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--air); outline-offset: 1px; }
+details summary { cursor: pointer; font: 600 1rem var(--font-display); }
+.note { font-size: 0.85rem; color: var(--warn-ink); background: var(--warn-bg); padding: 8px 10px; border-radius: 6px; margin: 10px 0 0; }
+.gate { font-weight: 600; }
+.gate.ok { color: var(--s3); } .gate.no { color: var(--s2); }
+@media (max-width: 820px) {
+  .charts, .input { grid-template-columns: minmax(0, 1fr); }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .chart-wrap { height: 320px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a href="../guide.html" style="color:var(--muted);font-size:.9rem">← JAWS guide</a>
+  <header>
+    <h1>Muscle Force vs. Pressure</h1>
+    <p>Phase 1 blocked-force characterization. Paste the STEP lines from the <a href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/arduino/muscle_force_pressure/muscle_force_pressure.ino">force–pressure logger</a>, enter the muscle's geometry, and the page fits F = P(c₁ − c₂ε) across every contraction you held.</p>
+  </header>
+
+  <span class="tag" id="exampleTag">Example data · made-up numbers · paste yours below</span>
+
+  <section class="charts">
+    <div class="panel">
+      <h2>Force vs. pressure, by contraction</h2>
+      <div class="legend" id="legend1"></div>
+      <div class="chart-wrap"><canvas id="c1" aria-label="Force versus pressure scatter with fitted lines"></canvas></div>
+    </div>
+    <div class="panel">
+      <h2>Measured vs. predicted</h2>
+      <div class="legend"><span><svg width="20" height="12"><rect width="20" height="12" fill="var(--air-soft)"/></svg>±15% band</span><span><svg width="20" height="12"><line x1="0" y1="6" x2="20" y2="6" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="4 3"/></svg>perfect fit</span></div>
+      <div class="chart-wrap"><canvas id="c2" aria-label="Parity plot of measured versus predicted force"></canvas></div>
+    </div>
+  </section>
+
+  <section class="stats">
+    <div class="panel stat"><div class="k">c₁</div><div class="v" id="sC1">–</div><div class="sub" id="sC1s"></div></div>
+    <div class="panel stat"><div class="k">c₂</div><div class="v" id="sC2">–</div><div class="sub" id="sC2s"></div></div>
+    <div class="panel stat"><div class="k">R² of the fit</div><div class="v" id="sR2">–</div><div class="sub" id="sR2s"></div></div>
+    <div class="panel stat"><div class="k">RMSE</div><div class="v" id="sRM">–</div><div class="sub" id="sRMs"></div></div>
+    <div class="panel stat"><div class="k">Efficiency c₁ ÷ ideal</div><div class="v" id="sEf">–</div><div class="sub" id="sEfs"></div></div>
+  </section>
+
+  <section class="panel">
+    <h2>Fitted formula</h2>
+    <div class="eq" id="eq">–</div>
+    <p class="hint" id="eqNote" style="margin:8px 0 0"></p>
+  </section>
+
+  <section class="panel">
+    <h2>Each contraction</h2>
+    <div class="table-scroll"><table><thead id="th"></thead><tbody id="tb"></tbody></table></div>
+    <p class="note">Slope is a straight line through that contraction's points alone, so it shows how much force each kPa adds at that length. Repeatability compares that slope between trials (target ≤ 10%). Hysteresis compares force on the way down with force on the way up at the same pressure.</p>
+  </section>
+
+  <section class="panel">
+    <h2>How the numbers were calculated</h2>
+    <div class="calc" id="calc"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Class model a at one pressure</h2>
+    <p class="hint">The hanging-mass model F = a(x − b) is the fitted formula at one fixed pressure: a = −c₂P ÷ L₀ and b = c₁L₀ ÷ c₂ (free contraction). Pick a pressure to compare with a = −1.6 N/mm.</p>
+    <div class="row" style="max-width:360px"><label for="aP">Pressure (psi)</label><input type="number" id="aP" value="20" step="1" min="0"></div>
+    <div class="eq" id="aOut" style="margin-top:10px">–</div>
+  </section>
+
+  <section class="panel input">
+    <div>
+      <h2>Serial Monitor output</h2>
+      <p class="hint">Paste all the <b>STEP</b> lines (LIVE and # lines are ignored, so pasting everything is fine). You can also type rows as <code>contraction_mm, psi, newtons</code> or add a trial first: <code>trial, contraction_mm, psi, newtons</code>.</p>
+      <textarea id="raw" spellcheck="false" aria-label="Serial Monitor output"></textarea>
+      <details style="margin-top:12px">
+        <summary>Every point as a table</summary>
+        <div class="table-scroll" style="margin-top:8px"><table><thead><tr><th>Trial</th><th>Contraction (mm)</th><th>ε (%)</th><th>Pressure (kPa)</th><th>Direction</th><th>Force (N)</th><th>Predicted (N)</th><th>Error (N)</th></tr></thead><tbody id="allRows"></tbody></table></div>
+      </details>
+    </div>
+    <div class="side">
+      <div class="group"><b>Muscle geometry</b>
+        <div class="row"><label for="L0">Relaxed length L₀ (mm)</label><input type="number" id="L0" value="200" step="1"></div>
+        <div class="row"><label for="D0">Relaxed diameter D₀ (mm)</label><input type="number" id="D0" value="12" step="0.1"></div>
+        <div class="row"><label for="turns">Braid turns n over L₀</label><input type="number" id="turns" value="2.5" step="0.1"></div>
+        <div class="row"><span>Braid angle θ₀</span><span id="theta" style="font-family:var(--font-mono)">–</span></div>
+      </div>
+      <div class="group"><b>Fit</b>
+        <label class="check"><input type="checkbox" id="offset" checked><span>Allow a threshold pressure<small>Adds c₀ so force can start above zero pressure. Real bladders need some pressure before they pull.</small></span></label>
+        <label class="check"><input type="checkbox" id="ideal" checked><span>Show the ideal line at ε = 0<small>πD₀²/4 · (3cos²θ₀ − 1) · P, the upper limit.</small></span></label>
+        <div class="row"><label for="unit">Pressure axis</label><select id="unit"><option value="kpa">kPa</option><option value="psi">psi</option></select></div>
+      </div>
+      <div class="buttons"><button id="clearBtn" type="button">Clear</button><button id="exBtn" type="button">Show example</button></div>
+      <div class="status" id="status"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const KPA = 6.894757;
+  const SHAPES = ["circle", "square", "triangle", "diamond", "circle"];
+  let isExample = false, plots = {};
+
+  // ---------- example (made-up) ----------
+  function example() {
+    const L0 = 200, out = ["# example only — made-up numbers"];
+    let seed = 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280 - 0.5;
+    [1, 2].forEach(tr => [0, 12, 24, 36].forEach(cmm => {
+      const eps = cmm / L0, up = [5, 10, 15, 20, 25, 30], seq = up.concat([25, 15, 5]);
+      seq.forEach((psi, i) => {
+        const P = psi * KPA, down = i >= up.length;
+        let F = P * (0.125 - 0.52 * eps) - 3 + (down ? 0.05 * P * (0.125 - 0.52 * eps) : 0) + rnd() * 1.6 + (tr - 1.5) * 0.8;
+        F = Math.max(F, 0);
+        out.push(["STEP", tr, cmm.toFixed(1), (psi + rnd() * 0.3).toFixed(3), F.toFixed(3), "0.050", "0.120"].join(","));
+      });
+    }));
+    return out.join("\n");
+  }
+
+  // ---------- parse ----------
+  function parse(text) {
+    const pts = [];
+    text.split(/\r?\n/).forEach(line => {
+      let s = line.trim().replace(/^\d{1,2}:\d{2}:\d{2}(?:\.\d+)?\s*->\s*/, "");
+      if (!s || s[0] === "#" || /^LIVE/i.test(s)) return;
+      let nums;
+      if (/^STEP/i.test(s)) {
+        nums = s.split(",").slice(1).map(Number);
+        if (nums.length >= 4 && nums.slice(0, 4).every(isFinite)) pts.push({ trial: nums[0], cmm: nums[1], psi: nums[2], F: nums[3] });
+        return;
+      }
+      nums = s.split(/[,\t;]+|\s+/).filter(Boolean).map(Number);
+      if (!nums.every(isFinite)) return;
+      if (nums.length === 3) pts.push({ trial: 1, cmm: nums[0], psi: nums[1], F: nums[2] });
+      else if (nums.length === 4) pts.push({ trial: nums[0], cmm: nums[1], psi: nums[2], F: nums[3] });
+    });
+    // direction: compare with previous point of the same trial and contraction
+    const last = {};
+    pts.forEach(p => {
+      const k = p.trial + "|" + p.cmm, prev = last[k];
+      p.dir = prev && p.psi < prev.psi - 0.3 ? "down" : (prev && prev.dir === "down" && Math.abs(p.psi - prev.psi) <= 0.3 ? "down" : "up");
+      last[k] = p;
+      p.P = p.psi * KPA;
+    });
+    return pts;
+  }
+
+  // ---------- math ----------
+  function solve(A, b) {
+    const n = b.length, M = A.map((r, i) => r.concat([b[i]]));
+    for (let c = 0; c < n; c++) {
+      let piv = c; for (let r = c + 1; r < n; r++) if (Math.abs(M[r][c]) > Math.abs(M[piv][c])) piv = r;
+      [M[c], M[piv]] = [M[piv], M[c]];
+      if (Math.abs(M[c][c]) < 1e-12) return null;
+      for (let r = 0; r < n; r++) if (r !== c) { const f = M[r][c] / M[c][c]; for (let k = c; k <= n; k++) M[r][k] -= f * M[c][k]; }
+    }
+    return M.map((r, i) => r[n] / r[i]);
+  }
+  function lsq(rows, y) {
+    const m = rows[0].length, A = Array.from({ length: m }, () => Array(m).fill(0)), b = Array(m).fill(0);
+    rows.forEach((r, i) => { for (let a = 0; a < m; a++) { b[a] += r[a] * y[i]; for (let c = 0; c < m; c++) A[a][c] += r[a] * r[c]; } });
+    return solve(A, b);
+  }
+  const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
+  const sd = a => { if (a.length < 2) return 0; const m = mean(a); return Math.sqrt(a.reduce((s, x) => s + (x - m) ** 2, 0) / (a.length - 1)); };
+  const f = (n, d) => (Math.abs(n) < 0.5 * 10 ** -d ? 0 : n).toFixed(d);
+  const cssv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const colorFor = i => cssv("--s" + ((i % 5) + 1));
+
+  // ---------- update ----------
+  function update() {
+    const pts = parse($("raw").value);
+    const L0 = +$("L0").value || 1, D0 = +$("D0").value || 0, turns = +$("turns").value || 0;
+    const th = Math.atan(Math.PI * D0 * turns / L0);
+    $("theta").textContent = turns > 0 ? f(th * 180 / Math.PI, 1) + "°" : "–";
+    const c1Ideal = Math.PI * D0 * D0 / 4 * (3 * Math.cos(th) ** 2 - 1) * 1e-3; // N per kPa
+    const useOff = $("offset").checked, psiAxis = $("unit").value === "psi";
+    const st = $("status");
+
+    if (pts.length < 3) {
+      plots = {};
+      st.className = "status err";
+      st.textContent = $("raw").value.trim() ? "Not enough readings found. Paste the STEP lines from the Serial Monitor." : "Paste STEP lines to draw the graph.";
+      ["sC1", "sC2", "sR2", "sRM", "sEf"].forEach(id => $(id).textContent = "–");
+      ["th", "tb", "calc", "allRows", "legend1"].forEach(id => $(id).innerHTML = "");
+      $("eq").textContent = "–"; $("eqNote").textContent = ""; $("aOut").textContent = "–";
+      drawAll(); return;
+    }
+
+    pts.forEach(p => p.eps = p.cmm / L0);
+    const levels = [...new Set(pts.map(p => p.cmm))].sort((a, b) => a - b);
+    const nLevels = levels.length;
+    const rows = pts.map(p => useOff ? [p.P, -p.P * p.eps, 1] : [p.P, -p.P * p.eps]);
+    let c = lsq(rows, pts.map(p => p.F));
+    let warn = "";
+    if (!c) { c = lsq(pts.map(p => useOff ? [p.P, 1] : [p.P]), pts.map(p => p.F)); c = useOff ? [c[0], 0, c[1]] : [c[0], 0]; warn = " Only one contraction held, so c₂ can't be found; hold at least two lengths."; }
+    const [c1, c2] = c, c0 = useOff ? c[2] : 0;
+    const pred = p => p.P * (c1 - c2 * p.eps) + c0;
+    const res = pts.map(p => p.F - pred(p));
+    const Fm = mean(pts.map(p => p.F));
+    const ssr = res.reduce((s, r) => s + r * r, 0), sst = pts.reduce((s, p) => s + (p.F - Fm) ** 2, 0);
+    const R2 = sst > 0 ? 1 - ssr / sst : 0, rmse = Math.sqrt(ssr / pts.length);
+    const eff = c1Ideal > 0 ? c1 / c1Ideal : NaN;
+
+    $("sC1").innerHTML = f(c1, 4) + "<small>N/kPa</small>";
+    $("sC1s").textContent = "force per kPa at full length";
+    $("sC2").innerHTML = f(c2, 4) + "<small>N/kPa</small>";
+    $("sC2s").textContent = nLevels > 1 ? "lost per kPa per unit of ε" : "needs 2+ contractions";
+    $("sR2").textContent = f(R2, 3);
+    $("sR2s").innerHTML = "gate ≥ 0.90: <span class='gate " + (R2 >= 0.9 ? "ok'>✓ passes" : "no'>✗ below") + "</span>";
+    $("sRM").innerHTML = f(rmse, 2) + "<small>N</small>";
+    $("sRMs").textContent = pts.length + " readings";
+    $("sEf").innerHTML = isFinite(eff) ? f(eff * 100, 0) + "<small>%</small>" : "–";
+    $("sEfs").textContent = isFinite(eff) ? "ideal c₁ = " + f(c1Ideal, 4) + " N/kPa" : "enter D₀ and braid turns";
+
+    const offTxt = useOff ? (c0 >= 0 ? " + " : " − ") + f(Math.abs(c0), 2) : "";
+    $("eq").textContent = "F [N] = P [kPa] · (" + f(c1, 4) + " − " + f(c2, 4) + " · ε)" + offTxt;
+    const pth = useOff && c0 < 0 ? -c0 / c1 : 0;
+    $("eqNote").textContent = "ε = contraction ÷ L₀ (0.10 = 10%)." +
+      (c2 > 0 ? " Predicted free contraction at high pressure: ε = c₁ ÷ c₂ = " + f(c1 / c2 * 100, 1) + "% (" + f(c1 / c2 * L0, 1) + " mm). Check it against your free-contraction test." : "") +
+      (pth > 0 ? " Threshold: the muscle starts pulling at about " + f(pth, 0) + " kPa (" + f(pth / KPA, 1) + " psi)." : "") + warn;
+
+    // per-level table
+    const levelInfo = levels.map((cmm, i) => {
+      const lp = pts.filter(p => p.cmm === cmm);
+      const line = lp.length > 1 ? lsq(lp.map(p => [p.P, 1]), lp.map(p => p.F)) : null;
+      const trials = [...new Set(lp.map(p => p.trial))];
+      const slopes = trials.map(t => { const tp = lp.filter(p => p.trial === t); return tp.length > 1 ? lsq(tp.map(p => [p.P, 1]), tp.map(p => p.F)) : null; }).filter(Boolean).map(s => s[0]);
+      const cv = slopes.length > 1 ? sd(slopes) / Math.abs(mean(slopes)) * 100 : NaN;
+      // hysteresis: down points vs straight line through up points
+      const upP = lp.filter(p => p.dir === "up"), dnP = lp.filter(p => p.dir === "down");
+      let hys = NaN;
+      if (upP.length > 1 && dnP.length) {
+        const u = lsq(upP.map(p => [p.P, 1]), upP.map(p => p.F));
+        if (u) hys = mean(dnP.map(p => Math.abs(p.F - (u[0] * p.P + u[1])))) / Math.max(mean(lp.map(p => p.F)), 1e-6) * 100;
+      }
+      let ssl = 0, stl = 0; const m = mean(lp.map(p => p.F));
+      lp.forEach(p => { ssl += (p.F - pred(p)) ** 2; stl += (p.F - m) ** 2; });
+      return { cmm, i, lp, line, trials, slopes, cv, hys, maxF: Math.max(...lp.map(p => p.F)) };
+    });
+    $("th").innerHTML = "<tr><th>Contraction</th><th>ε</th><th>Readings</th><th>Trials</th><th>Max force (N)</th><th>Slope (N/kPa)</th><th>Model slope c₁ − c₂ε</th><th>Repeatability</th><th>Hysteresis</th></tr>";
+    $("tb").innerHTML = levelInfo.map(L => "<tr><td><span class='dot' style='background:" + colorFor(L.i) + "'></span>" + f(L.cmm, 1) + " mm</td>" +
+      "<td class='num'>" + f(L.cmm / L0 * 100, 1) + "%</td><td class='num'>" + L.lp.length + "</td><td class='num'>" + L.trials.length + "</td>" +
+      "<td class='num'>" + f(L.maxF, 2) + "</td><td class='num'>" + (L.line ? f(L.line[0], 4) : "–") + "</td>" +
+      "<td class='num'>" + f(c1 - c2 * L.cmm / L0, 4) + "</td>" +
+      "<td class='num'>" + (isFinite(L.cv) ? f(L.cv, 1) + "% <span class='gate " + (L.cv <= 10 ? "ok'>✓" : "no'>✗") + "</span>" : "1 trial") + "</td>" +
+      "<td class='num'>" + (isFinite(L.hys) ? f(L.hys, 1) + "%" : "no down steps") + "</td></tr>").join("");
+
+    // worked calculation
+    const n = pts.length, p0 = pts[0];
+    $("calc").innerHTML =
+      "<div class='card'><h3>The fit</h3><ol>" +
+      "<li><span>Each reading becomes one row: P, −P·ε" + (useOff ? ", 1" : "") + " → F</span><code>first: " + f(p0.P, 1) + ", " + f(-p0.P * p0.eps, 2) + (useOff ? ", 1" : "") + " → " + f(p0.F, 2) + " N</code></li>" +
+      "<li><span>Least squares on all " + n + " rows (the same as this MATLAB)</span><code>X = [P, -P.*eps" + (useOff ? ", ones(size(P))" : "") + "]; c = X \\ F;</code></li>" +
+      "<li><span>Result</span><code>c₁ = " + f(c1, 4) + ", c₂ = " + f(c2, 4) + (useOff ? ", c₀ = " + f(c0, 2) + " N" : "") + "</code></li>" +
+      "<li><span>R² = 1 − Σ(F − F̂)² ÷ Σ(F − F̄)²</span><code>1 − " + f(ssr, 1) + " ÷ " + f(sst, 1) + " = " + f(R2, 3) + "</code></li>" +
+      "<li><span>RMSE = √( Σ(F − F̂)² ÷ n )</span><code>√( " + f(ssr, 1) + " ÷ " + n + " ) = " + f(rmse, 2) + " N</code></li></ol></div>" +
+      "<div class='card'><h3>Ideal muscle and efficiency</h3><ol>" +
+      "<li><span>Braid angle: tan θ₀ = π D₀ n ÷ L₀</span><code>π × " + f(D0, 1) + " × " + f(turns, 2) + " ÷ " + f(L0, 0) + " = " + f(Math.tan(th), 3) + " → θ₀ = " + f(th * 180 / Math.PI, 1) + "°</code></li>" +
+      "<li><span>Ideal c₁ = πD₀²/4 · (3cos²θ₀ − 1), mm²·kPa → N (× 0.001)</span><code>" + f(Math.PI * D0 * D0 / 4, 1) + " × " + f(3 * Math.cos(th) ** 2 - 1, 3) + " × 0.001 = " + f(c1Ideal, 4) + " N/kPa</code></li>" +
+      "<li><span>Efficiency = fitted c₁ ÷ ideal c₁</span><code>" + f(c1, 4) + " ÷ " + f(c1Ideal, 4) + " = " + (isFinite(eff) ? f(eff * 100, 0) + "%" : "–") + "</code></li>" +
+      "<li><span>Pressure conversion</span><code>kPa = psi × 6.895</code></li></ol></div>";
+
+    // a calculator
+    const aPsi = +$("aP").value || 0, aP = aPsi * KPA;
+    $("aOut").textContent = c2 > 0
+      ? "At " + f(aPsi, 1) + " psi (" + f(aP, 0) + " kPa):  a = −" + f(c2, 4) + " × " + f(aP, 0) + " ÷ " + f(L0, 0) + " = " + f(-c2 * aP / L0, 3) + " N/mm,   b = " + f(c1 / c2 * L0, 1) + " mm"
+      : "Hold at least two contractions to get c₂.";
+
+    // all-points table
+    $("allRows").innerHTML = pts.map(p => "<tr><td class='num'>" + p.trial + "</td><td class='num'>" + f(p.cmm, 1) + "</td><td class='num'>" + f(p.eps * 100, 1) + "</td><td class='num'>" + f(p.P, 1) + "</td><td>" + (p.dir === "up" ? "rising" : "falling") + "</td><td class='num'>" + f(p.F, 2) + "</td><td class='num'>" + f(pred(p), 2) + "</td><td class='num'>" + f(p.F - pred(p), 2) + "</td></tr>").join("");
+
+    // legend
+    $("legend1").innerHTML = levelInfo.map(L => "<span>" + shapeSvg(SHAPES[L.i % 5], colorFor(L.i), true) + f(L.cmm, 1) + " mm (ε " + f(L.cmm / L0 * 100, 0) + "%)</span>").join("") +
+      "<span>" + shapeSvg("circle", cssv("--muted"), false) + "falling pressure</span>" +
+      ($("ideal").checked && c1Ideal > 0 ? "<span><svg width='20' height='12'><line x1='0' y1='6' x2='20' y2='6' stroke='" + cssv("--muted") + "' stroke-width='1.5' stroke-dasharray='4 3'/></svg>ideal, ε = 0</span>" : "");
+
+    const xs = p => psiAxis ? p.psi : p.P;
+    const Pmax = Math.max(...pts.map(p => p.P));
+    plots.c1 = {
+      xLabel: psiAxis ? "Pressure (psi)" : "Pressure (kPa)", yLabel: "Force (N)",
+      points: pts.map(p => ({ x: xs(p), y: p.F, ci: levels.indexOf(p.cmm), hollow: p.dir === "down",
+        tip: "<b>" + f(p.cmm, 1) + " mm</b> · trial " + p.trial + " · " + (p.dir === "up" ? "rising" : "falling") + "<br>" + f(p.P, 0) + " kPa (" + f(p.psi, 1) + " psi) → " + f(p.F, 2) + " N<br>model " + f(pred(p), 2) + " N" })),
+      lines: levelInfo.map(L => {
+        const e = L.cmm / L0, P1 = Math.max(useOff && c0 < 0 ? -c0 / Math.max(c1 - c2 * e, 1e-6) : 0, 0);
+        return { pts: [[P1, P1 * (c1 - c2 * e) + c0], [Pmax, Pmax * (c1 - c2 * e) + c0]].map(q => [psiAxis ? q[0] / KPA : q[0], q[1]]), ci: L.i, label: f(e * 100, 0) + "%" };
+      }).concat($("ideal").checked && c1Ideal > 0 ? [{ pts: [[0, 0], [Pmax, Pmax * c1Ideal]].map(q => [psiAxis ? q[0] / KPA : q[0], q[1]]), dash: true, label: "ideal" }] : [])
+    };
+    const mx = Math.max(...pts.map(p => Math.max(p.F, pred(p)))) * 1.08;
+    plots.c2 = {
+      xLabel: "Predicted force (N)", yLabel: "Measured force (N)", square: mx,
+      points: pts.map(p => ({ x: pred(p), y: p.F, ci: levels.indexOf(p.cmm), hollow: p.dir === "down",
+        tip: "<b>" + f(p.cmm, 1) + " mm</b> · trial " + p.trial + "<br>predicted " + f(pred(p), 2) + " N, measured " + f(p.F, 2) + " N" })),
+      lines: [{ pts: [[0, 0], [mx, mx]], dash: true }], band: mx
+    };
+
+    st.className = "status";
+    st.textContent = pts.length + " readings · " + nLevels + " contraction" + (nLevels > 1 ? "s" : "") + " · " + new Set(pts.map(p => p.trial)).size + " trial(s).";
+    drawAll();
+  }
+
+  function shapeSvg(shape, color, filled) {
+    const fill = filled ? color : "none", s = "stroke='" + color + "' stroke-width='1.6' fill='" + fill + "'";
+    const body = shape === "square" ? "<rect x='2' y='2' width='8' height='8' " + s + "/>"
+      : shape === "triangle" ? "<polygon points='6,1.5 11,10.5 1,10.5' " + s + "/>"
+      : shape === "diamond" ? "<polygon points='6,1 11,6 6,11 1,6' " + s + "/>"
+      : "<circle cx='6' cy='6' r='4.2' " + s + "/>";
+    return "<svg width='12' height='12'>" + body + "</svg>";
+  }
+
+  // ---------- drawing ----------
+  function nice(range, count) { const r = range / count, p = 10 ** Math.floor(Math.log10(r)), q = r / p; return (q < 1.5 ? 1 : q < 3 ? 2 : q < 7 ? 5 : 10) * p; }
+  function mark(ctx, shape, x, y, r) {
+    ctx.beginPath();
+    if (shape === "square") ctx.rect(x - r * 0.85, y - r * 0.85, r * 1.7, r * 1.7);
+    else if (shape === "triangle") { ctx.moveTo(x, y - r * 1.1); ctx.lineTo(x + r, y + r * 0.8); ctx.lineTo(x - r, y + r * 0.8); ctx.closePath(); }
+    else if (shape === "diamond") { ctx.moveTo(x, y - r * 1.15); ctx.lineTo(x + r * 1.15, y); ctx.lineTo(x, y + r * 1.15); ctx.lineTo(x - r * 1.15, y); ctx.closePath(); }
+    else ctx.arc(x, y, r, 0, Math.PI * 2);
+  }
+  function draw(id) {
+    const cv = $(id), box = cv.parentElement.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    cv.width = Math.round(box.width * dpr); cv.height = Math.round(box.height * dpr);
+    const ctx = cv.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const W = box.width, H = box.height, ink = cssv("--ink"), muted = cssv("--muted"), line = cssv("--line"), panel = cssv("--panel");
+    ctx.fillStyle = panel; ctx.fillRect(0, 0, W, H);
+    const P = plots[id];
+    if (!P) { ctx.fillStyle = muted; ctx.font = "13px 'IBM Plex Sans'"; ctx.textAlign = "center"; ctx.fillText("Your graph will appear here", W / 2, H / 2); cv._hits = []; return; }
+    const L = 58, R = id === "c1" ? 52 : 16, T = 12, B = 46, pw = W - L - R, ph = H - T - B;
+    let xMax, yMax;
+    if (P.square) { xMax = yMax = P.square; }
+    else { xMax = Math.max(...P.points.map(p => p.x), ...P.lines.flatMap(l => l.pts.map(q => q[0]))); yMax = Math.max(...P.points.map(p => p.y), ...P.lines.flatMap(l => l.pts.map(q => q[1]))); }
+    const xs = nice(xMax, 6), ys = nice(yMax, 5);
+    xMax = Math.ceil(xMax * 1.02 / xs) * xs; yMax = Math.ceil(yMax * 1.05 / ys) * ys;
+    const X = v => L + v / xMax * pw, Y = v => T + (1 - v / yMax) * ph;
+    ctx.font = "12px 'IBM Plex Mono', monospace"; ctx.strokeStyle = line; ctx.lineWidth = 1; ctx.fillStyle = muted;
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    for (let v = 0; v <= yMax + 1e-9; v += ys) { const y = Math.round(Y(v)) + .5; ctx.beginPath(); ctx.moveTo(L, y); ctx.lineTo(L + pw, y); ctx.stroke(); ctx.fillText(f(v, ys < 1 ? 1 : 0), L - 8, y); }
+    ctx.textAlign = "center"; ctx.textBaseline = "top";
+    for (let v = 0; v <= xMax + 1e-9; v += xs) { const x = Math.round(X(v)) + .5; ctx.beginPath(); ctx.moveTo(x, T); ctx.lineTo(x, T + ph); ctx.stroke(); ctx.fillText(f(v, xs < 1 ? 1 : 0), x, T + ph + 8); }
+    ctx.fillStyle = ink; ctx.font = "500 13px 'IBM Plex Sans', sans-serif";
+    ctx.fillText(P.xLabel, L + pw / 2, T + ph + 26);
+    ctx.save(); ctx.translate(14, T + ph / 2); ctx.rotate(-Math.PI / 2); ctx.textBaseline = "middle"; ctx.fillText(P.yLabel, 0, 0); ctx.restore();
+    ctx.save(); ctx.beginPath(); ctx.rect(L, T, pw, ph); ctx.clip();
+    if (P.band) {
+      ctx.fillStyle = cssv("--air-soft"); ctx.beginPath();
+      ctx.moveTo(X(0), Y(0)); ctx.lineTo(X(P.band), Y(P.band * 1.15)); ctx.lineTo(X(P.band), Y(P.band * 0.85)); ctx.closePath(); ctx.fill();
+    }
+    P.lines.forEach(l => {
+      ctx.strokeStyle = l.ci == null ? muted : colorFor(l.ci); ctx.lineWidth = l.dash ? 1.5 : 2;
+      ctx.setLineDash(l.dash ? [5, 4] : []); ctx.beginPath(); ctx.moveTo(X(l.pts[0][0]), Y(l.pts[0][1])); ctx.lineTo(X(l.pts[1][0]), Y(l.pts[1][1])); ctx.stroke();
+    });
+    ctx.setLineDash([]);
+    const hits = [];
+    P.points.forEach(p => {
+      const x = X(p.x), y = Y(p.y), col = colorFor(p.ci);
+      mark(ctx, SHAPES[p.ci % 5], x, y, 4.5);
+      if (p.hollow) { ctx.fillStyle = panel; ctx.fill(); ctx.strokeStyle = col; ctx.lineWidth = 1.8; ctx.stroke(); }
+      else { ctx.fillStyle = col; ctx.fill(); ctx.strokeStyle = panel; ctx.lineWidth = 1.5; ctx.stroke(); }
+      hits.push({ x, y, tip: p.tip });
+    });
+    ctx.restore();
+    // direct labels at the right end of each model line
+    if (id === "c1") {
+      ctx.font = "600 11px 'IBM Plex Sans', sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+      const used = [];
+      P.lines.forEach(l => {
+        if (!l.label) return; let y = Y(l.pts[1][1]);
+        used.forEach(u => { if (Math.abs(u - y) < 12) y = u + 12; }); used.push(y);
+        ctx.fillStyle = ink; ctx.fillText(l.label, L + pw + 6, Math.min(Math.max(y, T + 6), T + ph));
+      });
+    }
+    cv._hits = hits;
+  }
+  function drawAll() { draw("c1"); draw("c2"); }
+
+  function hover(id) {
+    const cv = $(id), wrap = cv.parentElement, tip = document.createElement("div");
+    tip.className = "tip"; tip.hidden = true; wrap.appendChild(tip);
+    cv.addEventListener("mousemove", e => {
+      const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+      let best = null, bd = 14 * 14;
+      (cv._hits || []).forEach(h => { const d = (h.x - mx) ** 2 + (h.y - my) ** 2; if (d < bd) { bd = d; best = h; } });
+      if (!best) { tip.hidden = true; return; }
+      tip.innerHTML = best.tip; tip.hidden = false;
+      const tw = tip.offsetWidth; let lx = best.x + 12; if (lx + tw > r.width) lx = best.x - tw - 12;
+      tip.style.left = lx + "px"; tip.style.top = Math.max(best.y - 40, 0) + "px";
+    });
+    cv.addEventListener("mouseleave", () => tip.hidden = true);
+  }
+
+  // ---------- wiring ----------
+  let timer; const later = () => { clearTimeout(timer); timer = setTimeout(update, 120); };
+  $("raw").addEventListener("input", () => { if (isExample) { isExample = false; $("exampleTag").hidden = true; } later(); });
+  ["L0", "D0", "turns", "aP"].forEach(id => $(id).addEventListener("input", later));
+  ["offset", "ideal", "unit"].forEach(id => $(id).addEventListener("change", update));
+  $("clearBtn").addEventListener("click", () => { $("raw").value = ""; isExample = false; $("exampleTag").hidden = true; update(); $("raw").focus(); });
+  $("exBtn").addEventListener("click", () => { $("raw").value = example(); isExample = true; $("exampleTag").hidden = false; update(); });
+  hover("c1"); hover("c2");
+  window.addEventListener("resize", drawAll);
+  try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", update); } catch (e) {}
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
+  $("raw").value = example(); isExample = true; update();
+})();
+</script>
+</body>
+</html>
