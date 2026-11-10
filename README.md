@@ -4,7 +4,7 @@ A live classroom leaderboard for the McKibben-muscle jaw project. Each team's lo
 
 Built by the Soft Robotics Clinic, Fall 2026: Chidera Anyanwu, Brandon De La Puente, Blanca Rivera, Kieran McGovern, Gabriella Pagano, David Weaver.
 
-**Start here: [JAWS Project Guide](https://pagano770.github.io/Jaws-Leaderboard/guide.html)** (every tool, link and file on one page)
+**Start here: [JAWS Project page](https://pagano770.github.io/Jaws-Leaderboard/guide.html)** (every tool, link and file on one page)
 
 - **Scoreboard (projector):** https://pagano770.github.io/Jaws-Leaderboard/
 - **Team station:** https://pagano770.github.io/Jaws-Leaderboard/#station

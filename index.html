@@ -5,9 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Jaw Force Challenge</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐢</text></svg>">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
 <script>
 /* ======================= EDIT THIS SECTION ======================= */
 const CONFIG = {
@@ -63,8 +60,8 @@ const CONFIG = {
   --signal-soft: rgba(255, 204, 0, 0.28);
   --fitting: #9A8C85;
   --danger: #A32D1E;
-  --display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
-  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --display: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --body: "Helvetica Neue", Helvetica, Arial, sans-serif;
   box-sizing: border-box;
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -111,7 +108,7 @@ body {
   margin: 0; background: var(--bg); color: var(--ink);
   font-family: var(--body); font-size: 1.0625rem; line-height: 1.5;
 }
-button, input, select { font: inherit; color: inherit; }
+button, input, select, textarea, code, kbd, pre { font: inherit; color: inherit; }
 button { cursor: pointer; }
 :focus-visible { outline: 3px solid var(--plate); outline-offset: 2px; }
 .wrap { max-width: 78rem; margin: 0 auto; padding: 1.25rem clamp(1rem, 3vw, 2.5rem) 3rem; }
