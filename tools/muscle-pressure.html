@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Muscle Pressure Graph</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
 /* Layout: lab-notebook tool — graph first, readings below it, paste box last. Rowan brown and gold. */
 :root {
@@ -19,9 +18,9 @@
   --muscle: #b38600;
   --warn-bg: #fff4cc;
   --warn-ink: #6b4f00;
-  --font-display: "Barlow", "Segoe UI", system-ui, sans-serif;
-  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  --font-display: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-body: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono: "Helvetica Neue", Helvetica, Arial, sans-serif;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
@@ -38,7 +37,7 @@
 }
 * { box-sizing: border-box; }
 header h1 { color: var(--air); }
-header { border-left: 5px solid #ffcc00; padding-left: 14px; }
+header { border-bottom: 2px solid var(--air); padding-bottom: 10px; }
 header p a, .back { color: var(--air); }
 .back { font-size: .9rem; }
 body {
@@ -53,11 +52,11 @@ body {
   display: flex; flex-direction: column; gap: 20px;
 }
 header h1 {
-  font-family: var(--font-display); font-weight: 700; font-size: 1.9rem; letter-spacing: 0.01em;
+  font-family: var(--font-display); font-weight: 700; font-size: 1.9rem;
   margin: 0; text-wrap: balance;
 }
 header p { margin: 4px 0 0; color: var(--muted); max-width: 62ch; }
-.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 3px; }
 .chart-panel { padding: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .title-input {
   font-family: var(--font-display); font-weight: 600; font-size: 1.2rem; color: var(--ink);
@@ -67,13 +66,10 @@ header p { margin: 4px 0 0; color: var(--muted); max-width: 62ch; }
 .title-input:focus { outline: none; border-color: var(--air); }
 .canvas-box { position: relative; width: 100%; height: 420px; }
 canvas { display: block; width: 100%; height: 100%; }
-.example-tag {
-  align-self: flex-start; font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.04em;
-  text-transform: uppercase; background: var(--warn-bg); color: var(--warn-ink); padding: 3px 8px; border-radius: 4px;
-}
+.example-tag { align-self: flex-start; font-style: italic; color: var(--muted); font-size: .88rem; }
 .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .stat { padding: 12px 14px; min-width: 0; }
-.stat .k { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.stat .k { font-size: 0.85rem; color: var(--muted); }
 .stat .v { font-family: var(--font-mono); font-size: 1.35rem; font-weight: 500; font-variant-numeric: tabular-nums; }
 .stat .v small { font-size: 0.8rem; color: var(--muted); margin-left: 3px; }
 .stat.peak .v { color: var(--muscle); }
@@ -82,12 +78,12 @@ canvas { display: block; width: 100%; height: 100%; }
 .table-scroll { overflow-x: auto; }
 table { border-collapse: collapse; width: 100%; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
 th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 500; }
+th { font-size: 0.82rem; color: var(--muted); font-weight: 500; }
 td.num { font-family: var(--font-mono); }
 tr.avg td { font-weight: 600; color: var(--air); border-bottom: none; }
-.note { margin: 10px 0 0; font-size: 0.85rem; color: var(--warn-ink); background: var(--warn-bg); padding: 8px 10px; border-radius: 6px; }
+.note { margin: 10px 0 0; font-size: .88rem; color: var(--muted); }
 .calc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
-.calc-card { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; min-width: 0; background: var(--bg); }
+.calc-card { border: 1px solid var(--line); border-radius: 3px; padding: 12px 14px; min-width: 0; background: var(--bg); }
 .calc-card h3 { font-family: var(--font-display); font-weight: 600; font-size: 1rem; margin: 0 0 8px; color: var(--air); }
 .calc-card ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 0.86rem; }
 .calc-card li span { display: block; color: var(--muted); }
@@ -98,7 +94,7 @@ tr.avg td { font-weight: 600; color: var(--air); border-bottom: none; }
 textarea {
   width: 100%; height: 220px; resize: vertical;
   font-family: var(--font-mono); font-size: 0.82rem; color: var(--ink);
-  background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 3px; padding: 10px;
 }
 textarea:focus, input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--air); outline-offset: 1px; }
 .side { display: flex; flex-direction: column; gap: 14px; }
@@ -124,18 +120,19 @@ button:hover { border-color: var(--air); color: var(--air); }
   .input-panel { grid-template-columns: minmax(0, 1fr); }
   .canvas-box { height: 300px; }
 }
+code, kbd, pre, textarea, input, select, button { font-family: var(--font-body); }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <a class="back" href="../guide.html">← JAWS guide</a>
+  <a class="back" href="../guide.html">← JAWS Project</a>
   <header>
     <h1>McKibben Muscle Pressure</h1>
     <p>Paste the DATA line from each test recorded with the <a href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/arduino/muscle_pressure_logger/muscle_pressure_logger.ino">muscle pressure logger</a>. One line draws that test; several lines are lined up and averaged. Line them up at the peak to compare leak rates.</p>
   </header>
 
   <section class="panel chart-panel">
-    <span class="example-tag" id="exampleTag">Example data · 3 made-up tests · paste yours below</span>
+    <span class="example-tag" id="exampleTag">Showing 3 made-up example tests until you paste your own.</span>
     <input class="title-input" id="graphTitle" value="Muscle pressure during inflation" aria-label="Graph title">
     <div class="canvas-box"><canvas id="chart" aria-label="Pressure over time graph"></canvas></div>
   </section>
@@ -441,7 +438,7 @@ button:hover { border-color: var(--air); color: var(--air); }
 
     const L = 62, R = 18, T = view && view.n > 1 ? 34 : 14, B = 46;
     const pw = W - L - R, ph = H - T - B;
-    ctx.font = "12px 'IBM Plex Mono', monospace";
+    ctx.font = "12px Helvetica, Arial, sans-serif";
 
     if (!view) {
       ctx.fillStyle = muted; ctx.textAlign = "center"; ctx.textBaseline = "middle";
@@ -481,7 +478,7 @@ button:hover { border-color: var(--air); color: var(--air); }
       ctx.fillText(fmt(v, xDec), x, T + ph + 8);
     }
 
-    ctx.fillStyle = ink; ctx.font = "500 13px 'IBM Plex Sans', sans-serif";
+    ctx.fillStyle = ink; ctx.font = "500 13px Helvetica, Arial, sans-serif";
     const xTitle = view.mode === "peak" ? "Time from the peak (seconds) · before ← 0 → after"
       : view.mode === "push" ? "Time from 1 s before the push (seconds)" : "Time (seconds)";
     ctx.fillText(xTitle, L + pw / 2, T + ph + 26);
@@ -522,7 +519,7 @@ button:hover { border-color: var(--air); color: var(--air); }
     const label = view.n > 1
       ? (view.mode === "peak" ? "Average peak " + value : "Highest point of average " + value)
       : "Peak " + value;
-    ctx.font = "600 12px 'IBM Plex Sans', sans-serif";
+    ctx.font = "600 12px Helvetica, Arial, sans-serif";
     const tw = ctx.measureText(label).width;
     let lx = px + 10, alignTxt = "left";
     if (lx + tw > L + pw) { lx = px - 10; alignTxt = "right"; }
@@ -530,7 +527,7 @@ button:hover { border-color: var(--air); color: var(--air); }
     ctx.fillText(label, lx, Math.max(py - 6, T + 14));
 
     if (view.n > 1) {
-      ctx.font = "12px 'IBM Plex Sans', sans-serif"; ctx.textBaseline = "middle"; ctx.textAlign = "left";
+      ctx.font = "12px Helvetica, Arial, sans-serif"; ctx.textBaseline = "middle"; ctx.textAlign = "left";
       let x = L; const y = 14;
       const item = (drawKey, text) => { drawKey(x, y); x += 26; ctx.fillStyle = muted; ctx.fillText(text, x, y); x += ctx.measureText(text).width + 22; };
       item((x0, y0) => { ctx.strokeStyle = air; ctx.lineWidth = 2.75; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 + 20, y0); ctx.stroke(); }, "Average of " + view.n + " tests");
