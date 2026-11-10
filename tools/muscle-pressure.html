@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Muscle Pressure Graph</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: lab-notebook tool — graph first, readings below it, paste box last. Rowan brown and gold. */
+:root {
+  --bg: #f6f1e9;
+  --panel: #ffffff;
+  --ink: #2a1a12;
+  --muted: #6e5a4c;
+  --line: #e4d9cb;
+  --air: #4f2c1d;
+  --air-soft: rgba(79, 44, 29, 0.13);
+  --trace: rgba(110, 90, 76, 0.45);
+  --muscle: #b38600;
+  --warn-bg: #fff4cc;
+  --warn-ink: #6b4f00;
+  --font-display: "Barlow", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1a120d; --panel: #251a14; --ink: #f4ece3; --muted: #bba795; --line: #3d2c22;
+    --air: #ffcc00; --air-soft: rgba(255, 204, 0, 0.15); --trace: rgba(187, 167, 149, 0.45);
+    --muscle: #fff1c7; --warn-bg: #3a2e0c; --warn-ink: #ffdd66; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1a120d; --panel: #251a14; --ink: #f4ece3; --muted: #bba795; --line: #3d2c22;
+  --air: #ffcc00; --air-soft: rgba(255, 204, 0, 0.15); --trace: rgba(187, 167, 149, 0.45);
+  --muscle: #fff1c7; --warn-bg: #3a2e0c; --warn-ink: #ffdd66; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+header h1 { color: var(--air); }
+header { border-left: 5px solid #ffcc00; padding-left: 14px; }
+header p a, .back { color: var(--air); }
+.back { font-size: .9rem; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5;
+}
+.wrap {
+  max-width: 1040px; margin: 0 auto;
+  padding-top: max(28px, env(safe-area-inset-top, 0px));
+  padding-bottom: max(48px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 20px;
+}
+header h1 {
+  font-family: var(--font-display); font-weight: 700; font-size: 1.9rem; letter-spacing: 0.01em;
+  margin: 0; text-wrap: balance;
+}
+header p { margin: 4px 0 0; color: var(--muted); max-width: 62ch; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+.chart-panel { padding: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.title-input {
+  font-family: var(--font-display); font-weight: 600; font-size: 1.2rem; color: var(--ink);
+  background: transparent; border: 1px dashed transparent; border-radius: 6px; padding: 4px 6px; width: 100%;
+}
+.title-input:hover { border-color: var(--line); }
+.title-input:focus { outline: none; border-color: var(--air); }
+.canvas-box { position: relative; width: 100%; height: 420px; }
+canvas { display: block; width: 100%; height: 100%; }
+.example-tag {
+  align-self: flex-start; font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.04em;
+  text-transform: uppercase; background: var(--warn-bg); color: var(--warn-ink); padding: 3px 8px; border-radius: 4px;
+}
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.stat { padding: 12px 14px; min-width: 0; }
+.stat .k { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.stat .v { font-family: var(--font-mono); font-size: 1.35rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+.stat .v small { font-size: 0.8rem; color: var(--muted); margin-left: 3px; }
+.stat.peak .v { color: var(--muscle); }
+.tests-panel { padding: 14px 16px; }
+.tests-panel h2, .input-panel h2 { font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; margin: 0 0 6px; }
+.table-scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 500; }
+td.num { font-family: var(--font-mono); }
+tr.avg td { font-weight: 600; color: var(--air); border-bottom: none; }
+.note { margin: 10px 0 0; font-size: 0.85rem; color: var(--warn-ink); background: var(--warn-bg); padding: 8px 10px; border-radius: 6px; }
+.calc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.calc-card { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; min-width: 0; background: var(--bg); }
+.calc-card h3 { font-family: var(--font-display); font-weight: 600; font-size: 1rem; margin: 0 0 8px; color: var(--air); }
+.calc-card ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 0.86rem; }
+.calc-card li span { display: block; color: var(--muted); }
+.calc-card code { display: block; font-family: var(--font-mono); font-size: 0.84rem; color: var(--ink); overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.calc-avg { grid-column: 1 / -1; border-color: var(--air); }
+.input-panel { padding: 16px; display: grid; grid-template-columns: minmax(0, 1fr) 270px; gap: 18px; }
+.hint { margin: 0 0 8px; color: var(--muted); font-size: 0.88rem; }
+textarea {
+  width: 100%; height: 220px; resize: vertical;
+  font-family: var(--font-mono); font-size: 0.82rem; color: var(--ink);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px;
+}
+textarea:focus, input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--air); outline-offset: 1px; }
+.side { display: flex; flex-direction: column; gap: 14px; }
+.field { display: flex; flex-direction: column; gap: 4px; font-size: 0.88rem; }
+.field input[type="number"], .field select {
+  font-family: var(--font-body); font-size: 0.9rem; padding: 6px 8px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+}
+.field input[type="number"] { font-family: var(--font-mono); width: 120px; }
+.check { display: flex; gap: 8px; align-items: flex-start; font-size: 0.88rem; }
+.check input { margin-top: 3px; accent-color: var(--air); }
+.check span small { display: block; color: var(--muted); }
+.buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+button {
+  font-family: var(--font-body); font-weight: 600; font-size: 0.88rem; padding: 8px 14px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer;
+}
+button:hover { border-color: var(--air); color: var(--air); }
+.status { font-size: 0.85rem; color: var(--muted); }
+.status.err { color: var(--warn-ink); background: var(--warn-bg); padding: 8px 10px; border-radius: 6px; }
+@media (max-width: 760px) {
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .input-panel { grid-template-columns: minmax(0, 1fr); }
+  .canvas-box { height: 300px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../guide.html">← JAWS guide</a>
+  <header>
+    <h1>McKibben Muscle Pressure</h1>
+    <p>Paste the DATA line from each test recorded with the <a href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/arduino/muscle_pressure_logger/muscle_pressure_logger.ino">muscle pressure logger</a>. One line draws that test; several lines are lined up and averaged. Line them up at the peak to compare leak rates.</p>
+  </header>
+
+  <section class="panel chart-panel">
+    <span class="example-tag" id="exampleTag">Example data · 3 made-up tests · paste yours below</span>
+    <input class="title-input" id="graphTitle" value="Muscle pressure during inflation" aria-label="Graph title">
+    <div class="canvas-box"><canvas id="chart" aria-label="Pressure over time graph"></canvas></div>
+  </section>
+
+  <section class="stats">
+    <div class="panel stat peak"><div class="k" id="kA">Peak pressure</div><div class="v" id="sA">–</div></div>
+    <div class="panel stat"><div class="k" id="kB">–</div><div class="v" id="sB">–</div></div>
+    <div class="panel stat"><div class="k" id="kC">–</div><div class="v" id="sC">–</div></div>
+    <div class="panel stat"><div class="k" id="kD">–</div><div class="v" id="sD">–</div></div>
+  </section>
+
+  <section class="panel tests-panel" id="testsPanel" hidden>
+    <h2>Each test</h2>
+    <div class="table-scroll">
+      <table>
+        <thead id="testsHead"></thead>
+        <tbody id="testsBody"></tbody>
+      </table>
+    </div>
+    <p class="note" id="leakNote" hidden>Leak rate only means something for leak tests, where the syringe is pushed and then held still. In a normal test the pressure drops because you let the syringe out, not because of a leak.</p>
+  </section>
+
+  <section class="panel tests-panel" id="calcPanel" hidden>
+    <h2>How the leak rate was calculated</h2>
+    <p class="hint" id="calcIntro"></p>
+    <div class="calc-grid" id="calcBody"></div>
+  </section>
+
+  <section class="panel input-panel">
+    <div>
+      <h2>Serial Monitor output</h2>
+      <p class="hint">Type <b>r</b> in the Serial Monitor, push the syringe, and after 20 seconds copy the line that starts with <b>DATA</b>. Paste it here on its own line. Paste more DATA lines underneath to average several tests.</p>
+      <textarea id="raw" spellcheck="false" aria-label="Serial Monitor output"></textarea>
+    </div>
+    <div class="side">
+      <div class="field">
+        <label for="alignMode">Line tests up</label>
+        <select id="alignMode">
+          <option value="push" selected>When the push starts</option>
+          <option value="peak">At the peak (best for leak rate)</option>
+          <option value="none">Don't line up</option>
+        </select>
+      </div>
+      <label class="check" for="pct">
+        <input type="checkbox" id="pct">
+        <span>Show as % of peak<small>Every test starts at 100%, so tests filled to different pressures are easy to compare.</small></span>
+      </label>
+      <label class="check" for="zero">
+        <input type="checkbox" id="zero" checked>
+        <span>Start the graph at zero<small>Subtracts the first 5 readings, so you see only what the syringe added.</small></span>
+      </label>
+      <div class="field">
+        <label for="interval">Seconds between readings</label>
+        <input type="number" id="interval" value="0.1" min="0.01" step="0.05">
+        <small class="hint" style="margin:0">Only used for data without times. DATA lines carry their own.</small>
+      </div>
+      <div class="buttons">
+        <button id="clearBtn" type="button">Clear</button>
+        <button id="exampleBtn" type="button">Show example</button>
+      </div>
+      <div class="status" id="status"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const raw = $("raw"), zero = $("zero"), alignMode = $("alignMode"), pct = $("pct"), interval = $("interval");
+  const statusEl = $("status"), exampleTag = $("exampleTag"), canvas = $("chart");
+  const LEAD = 1.0;          // seconds of rest kept before the push when lining up at the push
+  const ONSET_PSI = 0.15;    // pressure that counts as "push started"
+  let isExample = false;
+  let view = null;
+
+  // ---------- example data (clearly marked as made up) ----------
+  function exampleLine(peak, onset, seed) {
+    const dt = 0.08, vals = [];
+    for (let i = 0; i < 250; i++) {
+      const t = i * dt;
+      let p = 0;
+      const up = t - onset;
+      if (up > 0 && up < 12) p = peak * (1 - Math.exp(-up * 0.55)) / (1 - Math.exp(-12 * 0.55));
+      if (up >= 12) p = peak * Math.exp(-(up - 12) * 1.6);
+      p += Math.sin(i * 1.7 + seed) * 0.03;
+      vals.push(Math.max(p, -0.01).toFixed(2));
+    }
+    return "DATA," + dt.toFixed(3) + "," + vals.join(",");
+  }
+  function makeExample() {
+    return [exampleLine(4.1, 1.4, 1), exampleLine(4.6, 2.3, 2), exampleLine(3.8, 1.8, 3)].join("\n");
+  }
+
+  // ---------- parsing ----------
+  function parse(text) {
+    const tests = [], psi = [], hpa = [], timed = [];
+    text.split(/\r?\n/).forEach(line => {
+      const s = line.trim().replace(/^\d{1,2}:\d{2}:\d{2}(?:\.\d+)?\s*->\s*/, "");
+      if (!s) return;
+      let m;
+      if ((m = s.match(/^DATA,\s*(\d*\.?\d+)\s*,(.*)$/i))) {
+        const dt = +m[1] || 0.1, pts = [];
+        m[2].split(",").forEach(v => { const n = parseFloat(v); if (!isNaN(n)) pts.push([pts.length * dt, n]); });
+        if (pts.length > 1) tests.push(pts);
+        return;
+      }
+      if ((m = s.match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/))) { timed.push([+m[1], +m[2]]); return; }
+      if ((m = s.match(/Muscle_Pressure_PSI:\s*(-?\d+(?:\.\d+)?)/i))) { psi.push(+m[1]); return; }
+      if ((m = s.match(/\(PSI\)\s*:\s*(-?\d+(?:\.\d+)?)/i))) { psi.push(+m[1]); return; }
+      if ((m = s.match(/\(hPa\)\s*:\s*(-?\d+(?:\.\d+)?)/i))) { hpa.push(+m[1] / 68.947572932); return; }
+      if ((m = s.match(/^(-?\d+(?:\.\d+)?)$/))) { psi.push(+m[1]); return; }
+    });
+    if (tests.length) return tests;
+    if (timed.length > 1) return [timed];
+    const vals = psi.length ? psi : hpa;
+    const dt = Math.max(parseFloat(interval.value) || 0.1, 0.001);
+    return vals.length > 1 ? [vals.map((v, i) => [i * dt, v])] : [];
+  }
+
+  // ---------- math helpers ----------
+  function prep(test) {
+    const n0 = Math.min(5, test.length);
+    const base = zero.checked ? test.slice(0, n0).reduce((a, p) => a + p[1], 0) / n0 : 0;
+    const t0 = test[0][0];
+    return test.map(p => [p[0] - t0, p[1] - base]);
+  }
+  function peakOf(test) {
+    let pk = test[0];
+    test.forEach(p => { if (p[1] > pk[1]) pk = p; });
+    return pk;
+  }
+  function lineUp(test, mode) {
+    if (mode === "peak") {
+      const pkT = peakOf(test)[0];
+      return test.map(p => [p[0] - pkT, p[1]]);
+    }
+    let shift = 0;
+    if (mode === "push") {
+      const hit = test.find(p => p[1] > ONSET_PSI);
+      shift = Math.max((hit ? hit[0] : 0) - LEAD, 0);
+    }
+    return test.filter(p => p[0] >= shift - 1e-9).map(p => [p[0] - shift, p[1]]);
+  }
+  function valueAt(test, t) {
+    if (t <= test[0][0]) return test[0][1];
+    for (let i = 1; i < test.length; i++) {
+      if (test[i][0] >= t) {
+        const a = test[i - 1], b = test[i];
+        return a[1] + (b[1] - a[1]) * (t - a[0]) / ((b[0] - a[0]) || 1);
+      }
+    }
+    return test[test.length - 1][1];
+  }
+  // average of the readings within `w` seconds after time t, to smooth sensor noise
+  function smoothAt(test, t, w) {
+    const pts = test.filter(p => p[0] >= t - 1e-9 && p[0] <= t + w + 1e-9);
+    return pts.length ? pts.reduce((a, p) => a + p[1], 0) / pts.length : valueAt(test, t);
+  }
+  function mean(a) { return a.reduce((x, y) => x + y, 0) / a.length; }
+  function sd(a) {
+    if (a.length < 2) return 0;
+    const m = mean(a);
+    return Math.sqrt(a.reduce((s, x) => s + (x - m) * (x - m), 0) / (a.length - 1));
+  }
+  function fmt(n, d) { return (Math.abs(n) < Math.pow(10, -d) / 2 ? 0 : n).toFixed(d); }
+  function pm(arr, d, unit, n) {
+    return fmt(mean(arr), d) + "<small>" + (n > 1 ? "± " + fmt(sd(arr), d) + " " : "") + unit + "</small>";
+  }
+
+  // ---------- update ----------
+  function setStat(id, label, html) { $("k" + id).textContent = label; $("s" + id).innerHTML = html; }
+
+  function update() {
+    const mode = alignMode.value;
+    const tests = parse(raw.value).map(prep);
+    $("testsPanel").hidden = true;
+    $("calcPanel").hidden = true;
+
+    if (!tests.length) {
+      view = null;
+      statusEl.className = "status err";
+      statusEl.textContent = raw.value.trim()
+        ? "No pressure numbers found. Paste the line that starts with DATA from the Serial Monitor."
+        : "Paste a DATA line to draw the graph.";
+      ["A", "B", "C", "D"].forEach(id => $("s" + id).textContent = "–");
+      draw();
+      return;
+    }
+
+    const lined = tests.map(t => lineUp(t, mode));
+    const n = lined.length;
+    const peaks = tests.map(peakOf);
+    const pv = peaks.map(p => p[1]);
+    const start = Math.max(...lined.map(t => t[0][0]));
+    const end = Math.min(...lined.map(t => t[t.length - 1][0]));
+
+    // leak numbers, measured from the peak over the shared window (in PSI)
+    // (always calculated from each test's own peak, whatever the graph is lined up by)
+    const fromPeak = tests.map(t => lineUp(t, "peak").filter(p => p[0] >= -1e-9));
+    const window = Math.min(...fromPeak.map(t => t[t.length - 1][0]));
+    const lost = [], rate = [], startArr = [], endArr = [];
+    const endW = Math.min(1, window / 4);
+    fromPeak.forEach(t => {
+      const startP = smoothAt(t, 0, 0.5);
+      const endP = smoothAt(t, Math.max(window - endW, 0), endW);
+      const d = startP - endP;
+      startArr.push(startP); endArr.push(endP);
+      lost.push(d);
+      rate.push(window > 0 ? d / window : 0);
+    });
+
+    // values to draw: PSI or % of each test's peak
+    const shown = lined.map((t, i) => pct.checked ? t.map(p => [p[0], pv[i] > 0.05 ? p[1] / pv[i] * 100 : 0]) : t);
+
+    let main, band = null;
+    if (n === 1) {
+      main = shown[0];
+    } else {
+      const steps = shown.map(t => (t[t.length - 1][0] - t[0][0]) / (t.length - 1));
+      const step = Math.min(...steps);
+      main = []; const lo = [], hi = [];
+      for (let x = start; x <= end + 1e-9; x += step) {
+        const vals = shown.map(t => valueAt(t, x));
+        const m = mean(vals), s = sd(vals);
+        main.push([x, m]); lo.push([x, m - s]); hi.push([x, m + s]);
+      }
+      band = { lo, hi };
+    }
+    view = { main, faint: n > 1 ? shown : [], band, n, mode, peak: mode === "peak" ? main.reduce((a, p) => Math.abs(p[0]) < Math.abs(a[0]) ? p : a) : peakOf(main) };
+
+    // stat tiles
+    setStat("A", n > 1 ? "Average peak (± SD)" : "Peak pressure", pm(pv, 2, "PSI", n));
+    setStat("B", "Pressure lost in " + fmt(window, 0) + " s", pm(lost, 2, "PSI", n));
+    setStat("C", "Leak rate", pm(rate, 3, "PSI/s", n));
+    const pctLost = lost.map((d, i) => pv[i] > 0.05 ? d / pv[i] * 100 : 0);
+    setStat("D", "Pressure lost", pm(pctLost, 1, "% of peak", n));
+
+    // table
+    $("testsHead").innerHTML = "<tr><th>Test</th><th>Peak (PSI)</th><th>Lost in " + fmt(window, 0) + " s (PSI)</th><th>Leak rate (PSI/s)</th></tr>";
+    const rows = lined.map((t, i) =>
+      "<tr><td>Test " + (i + 1) + "</td><td class=\"num\">" + fmt(pv[i], 2) + "</td>" +
+      "<td class=\"num\">" + fmt(lost[i], 2) + "</td><td class=\"num\">" + fmt(rate[i], 3) + "</td></tr>").join("");
+    const avgRow = n > 1 ? "<tr class=\"avg\"><td>Average ± SD</td><td class=\"num\">" + fmt(mean(pv), 2) + " ± " + fmt(sd(pv), 2) + "</td>" +
+      "<td class=\"num\">" + fmt(mean(lost), 2) + " ± " + fmt(sd(lost), 2) + "</td><td class=\"num\">" + fmt(mean(rate), 3) + " ± " + fmt(sd(rate), 3) + "</td></tr>" : "";
+    $("testsBody").innerHTML = rows + avgRow;
+    $("leakNote").hidden = false;
+    $("testsPanel").hidden = false;
+
+    // worked calculations
+    const cards = fromPeak.map((t, i) => {
+      const pctL = pv[i] > 0.05 ? lost[i] / pv[i] * 100 : 0;
+      return "<div class=\"calc-card\"><h3>Test " + (i + 1) + "</h3><ol>" +
+        "<li><span>Peak</span><code>" + fmt(pv[i], 2) + " PSI at " + fmt(peaks[i][0], 1) + " s</code></li>" +
+        "<li><span>Start: average of the first 0.5 s after the peak</span><code>" + fmt(startArr[i], 2) + " PSI</code></li>" +
+        "<li><span>End: average of the last " + fmt(endW, 1) + " s of the " + fmt(window, 1) + " s window</span><code>" + fmt(endArr[i], 2) + " PSI</code></li>" +
+        "<li><span>Pressure lost = start − end</span><code>" + fmt(startArr[i], 2) + " − " + fmt(endArr[i], 2) + " = " + fmt(lost[i], 2) + " PSI</code></li>" +
+        "<li><span>Leak rate = lost ÷ time in seconds</span><code>" + fmt(lost[i], 2) + " ÷ " + fmt(window, 1) + " = " + fmt(rate[i], 3) + " PSI/s</code></li>" +
+        "<li><span>Lost as % of peak = lost ÷ peak × 100</span><code>" + fmt(lost[i], 2) + " ÷ " + fmt(pv[i], 2) + " × 100 = " + fmt(pctL, 1) + "%</code></li>" +
+        "</ol></div>";
+    }).join("");
+    let avg = "";
+    if (n > 1) {
+      const m = mean(rate);
+      avg = "<div class=\"calc-card calc-avg\"><h3>Average of " + n + " tests</h3><ol>" +
+        "<li><span>Average leak rate = add them up ÷ " + n + "</span><code>(" + rate.map(r => fmt(r, 3)).join(" + ") + ") ÷ " + n + " = " + fmt(m, 3) + " PSI/s</code></li>" +
+        "<li><span>Standard deviation = √( sum of (each − average)² ÷ (" + n + " − 1) )</span><code>√( (" + rate.map(r => "(" + fmt(r, 3) + " − " + fmt(m, 3) + ")²").join(" + ") + ") ÷ " + (n - 1) + " ) = " + fmt(sd(rate), 3) + " PSI/s</code></li>" +
+        "<li><span>Result</span><code>" + fmt(m, 3) + " ± " + fmt(sd(rate), 3) + " PSI/s</code></li>" +
+        "</ol></div>";
+    }
+    $("calcIntro").textContent = "Every test is measured over the same " + fmt(window, 1) +
+      " s after its own peak: the time from the peak to the end of the shortest test. Short averages at each end smooth out sensor noise.";
+    $("calcBody").innerHTML = cards + avg;
+    $("calcPanel").hidden = false;
+
+    statusEl.className = "status";
+    statusEl.textContent = (n > 1 ? "Averaged " + n + " tests" : "Graphed 1 test") +
+      (mode === "peak" ? ", lined up at the peak." : mode === "push" ? ", lined up at the push." : ".");
+    draw();
+  }
+
+  // ---------- drawing ----------
+  function niceStep(range, count) {
+    const rawStep = range / count;
+    const p = Math.pow(10, Math.floor(Math.log10(rawStep)));
+    const f = rawStep / p;
+    return (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) * p;
+  }
+  function cssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+  function draw() {
+    const box = canvas.parentElement.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(box.width * dpr);
+    canvas.height = Math.round(box.height * dpr);
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const W = box.width, H = box.height;
+
+    const ink = cssVar("--ink"), muted = cssVar("--muted"), line = cssVar("--line");
+    const air = cssVar("--air"), airSoft = cssVar("--air-soft"), muscle = cssVar("--muscle");
+    const trace = cssVar("--trace"), panel = cssVar("--panel");
+    ctx.fillStyle = panel; ctx.fillRect(0, 0, W, H);
+
+    const L = 62, R = 18, T = view && view.n > 1 ? 34 : 14, B = 46;
+    const pw = W - L - R, ph = H - T - B;
+    ctx.font = "12px 'IBM Plex Mono', monospace";
+
+    if (!view) {
+      ctx.fillStyle = muted; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText("Your graph will appear here", W / 2, H / 2);
+      return;
+    }
+
+    const isPct = pct.checked;
+    const all = view.main.concat(...view.faint, view.band ? view.band.hi.concat(view.band.lo) : []);
+    const xMinData = Math.min(0, ...all.map(p => p[0]));
+    const xMax = Math.max(...all.map(p => p[0])) || 1;
+    let yMin = Math.min(0, ...all.map(p => p[1]));
+    let yMax = Math.max(...all.map(p => p[1]));
+    if (yMax - yMin < 0.5) yMax = yMin + 0.5;
+    const yStep = niceStep(yMax - yMin, 5);
+    yMin = Math.floor(yMin / yStep) * yStep;
+    yMax = Math.ceil((yMax + yStep * 0.3) / yStep) * yStep;
+    const xStep = niceStep(xMax - xMinData, 7);
+    const xTop = Math.ceil(xMax / xStep) * xStep;
+    const xLo = Math.floor(xMinData / xStep) * xStep;
+    const X = v => L + ((v - xLo) / (xTop - xLo)) * pw;
+    const Y = v => T + (1 - (v - yMin) / (yMax - yMin)) * ph;
+
+    ctx.strokeStyle = line; ctx.lineWidth = 1; ctx.fillStyle = muted;
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    const yDec = yStep < 1 ? (yStep < 0.1 ? 2 : 1) : 0;
+    for (let v = yMin; v <= yMax + 1e-9; v += yStep) {
+      const y = Math.round(Y(v)) + 0.5;
+      ctx.beginPath(); ctx.moveTo(L, y); ctx.lineTo(L + pw, y); ctx.stroke();
+      ctx.fillText(fmt(v, yDec), L - 8, y);
+    }
+    ctx.textAlign = "center"; ctx.textBaseline = "top";
+    const xDec = xStep < 1 ? 1 : 0;
+    for (let v = xLo; v <= xTop + 1e-9; v += xStep) {
+      const x = Math.round(X(v)) + 0.5;
+      ctx.beginPath(); ctx.moveTo(x, T); ctx.lineTo(x, T + ph); ctx.stroke();
+      ctx.fillText(fmt(v, xDec), x, T + ph + 8);
+    }
+
+    ctx.fillStyle = ink; ctx.font = "500 13px 'IBM Plex Sans', sans-serif";
+    const xTitle = view.mode === "peak" ? "Time from the peak (seconds) · before ← 0 → after"
+      : view.mode === "push" ? "Time from 1 s before the push (seconds)" : "Time (seconds)";
+    ctx.fillText(xTitle, L + pw / 2, T + ph + 26);
+    ctx.save(); ctx.translate(14, T + ph / 2); ctx.rotate(-Math.PI / 2);
+    ctx.textBaseline = "middle";
+    ctx.fillText(isPct ? "Pressure (% of peak)" : zero.checked ? "Pressure above room air (PSI)" : "Pressure (PSI)", 0, 0);
+    ctx.restore();
+
+    if (view.mode === "peak") {
+      ctx.save(); ctx.setLineDash([4, 4]); ctx.strokeStyle = muted; ctx.lineWidth = 1;
+      const x0 = Math.round(X(0)) + 0.5;
+      ctx.beginPath(); ctx.moveTo(x0, T); ctx.lineTo(x0, T + ph); ctx.stroke(); ctx.restore();
+    }
+
+    const path = pts => { ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(X(p[0]), Y(p[1])) : ctx.moveTo(X(p[0]), Y(p[1]))); };
+
+    if (view.n === 1) {
+      const base = Y(Math.max(yMin, 0)), s = view.main;
+      path(s); ctx.lineTo(X(s[s.length - 1][0]), base); ctx.lineTo(X(s[0][0]), base); ctx.closePath();
+      ctx.fillStyle = airSoft; ctx.fill();
+    } else {
+      const hi = view.band.hi, lo = view.band.lo;
+      path(hi); for (let i = lo.length - 1; i >= 0; i--) ctx.lineTo(X(lo[i][0]), Y(lo[i][1]));
+      ctx.closePath(); ctx.fillStyle = airSoft; ctx.fill();
+      ctx.strokeStyle = trace; ctx.lineWidth = 1.25; ctx.lineJoin = "round";
+      view.faint.forEach(t => { path(t); ctx.stroke(); });
+    }
+
+    path(view.main);
+    ctx.strokeStyle = air; ctx.lineWidth = view.n > 1 ? 2.75 : 2.25; ctx.lineJoin = "round"; ctx.stroke();
+
+    // peak marker: in peak mode it sits at time 0, where every test is at its own peak
+    const pk = view.peak, px = X(pk[0]), py = Y(pk[1]);
+    ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI * 2);
+    ctx.fillStyle = muscle; ctx.fill();
+    ctx.strokeStyle = panel; ctx.lineWidth = 2; ctx.stroke();
+    const value = isPct ? fmt(pk[1], 0) + "%" : fmt(pk[1], 2) + " PSI";
+    const label = view.n > 1
+      ? (view.mode === "peak" ? "Average peak " + value : "Highest point of average " + value)
+      : "Peak " + value;
+    ctx.font = "600 12px 'IBM Plex Sans', sans-serif";
+    const tw = ctx.measureText(label).width;
+    let lx = px + 10, alignTxt = "left";
+    if (lx + tw > L + pw) { lx = px - 10; alignTxt = "right"; }
+    ctx.textAlign = alignTxt; ctx.textBaseline = "bottom"; ctx.fillStyle = muscle;
+    ctx.fillText(label, lx, Math.max(py - 6, T + 14));
+
+    if (view.n > 1) {
+      ctx.font = "12px 'IBM Plex Sans', sans-serif"; ctx.textBaseline = "middle"; ctx.textAlign = "left";
+      let x = L; const y = 14;
+      const item = (drawKey, text) => { drawKey(x, y); x += 26; ctx.fillStyle = muted; ctx.fillText(text, x, y); x += ctx.measureText(text).width + 22; };
+      item((x0, y0) => { ctx.strokeStyle = air; ctx.lineWidth = 2.75; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 + 20, y0); ctx.stroke(); }, "Average of " + view.n + " tests");
+      item((x0, y0) => { ctx.fillStyle = airSoft; ctx.fillRect(x0, y0 - 6, 20, 12); }, "± 1 standard deviation");
+      if (x + 120 < W) item((x0, y0) => { ctx.strokeStyle = trace; ctx.lineWidth = 1.25; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 + 20, y0); ctx.stroke(); }, "Each test");
+    }
+  }
+
+  // ---------- wiring ----------
+  let timer;
+  function scheduled() { clearTimeout(timer); timer = setTimeout(update, 120); }
+  raw.addEventListener("input", () => {
+    if (isExample) { isExample = false; exampleTag.hidden = true; }
+    scheduled();
+  });
+  [zero, alignMode, pct].forEach(el => el.addEventListener("change", update));
+  interval.addEventListener("input", scheduled);
+  $("clearBtn").addEventListener("click", () => {
+    raw.value = ""; isExample = false; exampleTag.hidden = true; update(); raw.focus();
+  });
+  $("exampleBtn").addEventListener("click", loadExample);
+  function loadExample() { raw.value = makeExample(); isExample = true; exampleTag.hidden = false; update(); }
+
+  window.addEventListener("resize", draw);
+  try { window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw); } catch (e) {}
+  new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+
+  loadExample();
+})();
+</script>
+</body>
+</html>

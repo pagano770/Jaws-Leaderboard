@@ -36,6 +36,7 @@ h1 { font: 700 clamp(2.4rem, 6vw, 3.75rem)/.95 var(--display); margin: 0; }
 .lede { color: var(--muted); max-width: 46rem; margin: .6rem 0 0; }
 h2 { font: 700 1.9rem/1.1 var(--display); margin: 2.25rem 0 .25rem; }
 h2 + p { color: var(--muted); margin: 0 0 1rem; max-width: 46rem; }
+.cards.pairs { grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr)); }
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 1rem; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 1.1rem 1.2rem; display: flex; flex-direction: column; gap: .5rem; min-width: 0; }
 .card h3 { font: 700 1.45rem/1.1 var(--display); margin: 0; }
@@ -104,8 +105,8 @@ pressure sensor + load cell            load cell on the jaw
   </div>
 
   <h2>Characterizing the muscle (Phase 1)</h2>
-  <p>Measures how much force the muscle makes at each pressure and length, so the jaw model can use a fitted formula in place of a = −1.6 N/mm.</p>
-  <div class="cards">
+  <p>Measures how much force the muscle makes at each pressure and length, so the jaw model can use a fitted formula in place of a = −1.6 N/mm, and checks that the muscle holds air.</p>
+  <div class="cards pairs">
     <div class="card">
       <h3>Force vs. pressure tool</h3>
       <span class="who">Any browser</span>
@@ -117,6 +118,18 @@ pressure sensor + load cell            load cell on the jaw
       <span class="who">Arduino Uno + HX711 + 0–80 psi sensor on A0</span>
       <p>Reads pressure and force together. Type <code>t</code> to zero, <code>c12</code> to set the contraction in mm, <code>n</code> for a new trial, and <code>h</code> at each syringe step to save a 2-second average.</p>
       <div class="go"><a class="btn alt" href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/arduino/muscle_force_pressure/muscle_force_pressure.ino">View or download</a></div>
+    </div>
+    <div class="card">
+      <h3>Muscle pressure graph</h3>
+      <span class="who">Any browser</span>
+      <p>Paste the DATA line from each 20-second recording. It graphs pressure over time, averages several tests with a ±1 SD band, and measures peak pressure and leak rate, with every calculation shown.</p>
+      <div class="go"><a class="btn" href="tools/muscle-pressure.html">Open the graph</a></div>
+    </div>
+    <div class="card">
+      <h3>Muscle pressure logger</h3>
+      <span class="who">Arduino UNO R4 WiFi + Adafruit MPRLS sensor</span>
+      <p>Live pressure in the Serial Plotter. Type <code>r</code> to record 20 seconds and print one DATA line, <code>t</code> to re-zero, <code>p</code> to go back to the plotter. Keep it under 9 psi to protect the sensor.</p>
+      <div class="go"><a class="btn alt" href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/arduino/muscle_pressure_logger/muscle_pressure_logger.ino">View or download</a></div>
     </div>
   </div>
 
@@ -137,6 +150,7 @@ pressure sensor + load cell            load cell on the jaw
     <tbody>
       <tr><td><a href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/jaw_force_sensor.ino"><code>jaw_force_sensor.ino</code></a></td><td>Load cell code for every team's Uno. Calibrated from the station page.</td><td>Leaderboard</td></tr>
       <tr><td><a href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/arduino/muscle_force_pressure/muscle_force_pressure.ino"><code>muscle_force_pressure.ino</code></a></td><td>Pressure + load cell logger. Needs your load cell factor in newtons.</td><td>Phase 1 muscle test</td></tr>
+      <tr><td><a href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/arduino/muscle_pressure_logger/muscle_pressure_logger.ino"><code>muscle_pressure_logger.ino</code></a></td><td>MPRLS pressure recorder for UNO R4 WiFi. Needs the "Adafruit MPRLS Library".</td><td>Pressure and leak tests</td></tr>
       <tr><td><a href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/jaw_force_app.m"><code>jaw_force_app.m</code></a></td><td>The MATLAB app (MATLAB Online or desktop R2020b+)</td><td>Calculations</td></tr>
       <tr><td><a href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/SETUP.md"><code>SETUP.md</code></a></td><td>Wiring, Firebase, GitHub Pages and class-day steps</td><td>Setup</td></tr>
       <tr><td><a href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/database.rules.json"><code>database.rules.json</code></a></td><td>Firebase security rules</td><td>Setup</td></tr>
