@@ -1,56 +1,63 @@
 /*
- * McKibben muscle pressure logger
- * MPRLS sensor -> Arduino UNO R4 WiFi
+ * Pressure sensor test + recorder
+ * Walfront 0-80 psi, 0.5-4.5 V output
+ * Wiring: red -> 5V, black -> GND, signal wire -> A0
  *
- * LIVE GRAPH: open Tools > Serial Plotter.
- *   Muscle_Pressure_PSI = pressure the syringe adds (0 = muscle at rest)
- *   Sensor_OK = 1 means the sensor is found, 0 means check wiring
+ * Open the Serial Monitor at 9600 baud. It shows live readings.
  *
- * RECORD A TEST (Serial Monitor):
+ * RECORD A TEST:
  *   Type r and press Enter, then push/hold/release the syringe.
  *   After 20 seconds it prints the peak pressure and ONE line that
- *   starts with DATA. Copy just that one line and paste it into the
- *   Muscle Pressure Graph page.
+ *   starts with DATA. Copy just that one line.
  *
- * Other commands: t = re-zero (syringe untouched), p = back to plotter.
+ * RUN ANOTHER TEST: type r and press Enter again, as many times as
+ *   you like. Each test is numbered. Typing r in the middle of a
+ *   test throws that test away and starts a fresh one.
+ *
+ * Other commands: t = re-zero (nothing pushing on the sensor),
+ *                 p = back to live readings.
+ * Capital letters (R, T, P) work too.
  */
 
-#include <Wire.h>
-#include "Adafruit_MPRLS.h"
-
-#define RESET_PIN  -1
-#define EOC_PIN    -1
-Adafruit_MPRLS mpr = Adafruit_MPRLS(RESET_PIN, EOC_PIN);
-
-const float HPA_TO_PSI = 1.0 / 68.947572932;
-const float MAX_GAUGE_PSI = 9.0;    // stay below this to protect the sensor
+const int PRESSURE_PIN = A0;
+const float P_MAX_KPA = 551.6;      // 80 psi
+const float KPA_PER_PSI = 6.895;
 const float RECORD_SECONDS = 20.0;  // length of one recorded test
 const int   MAX_SAMPLES = 260;      // room for 20 s at ~10 readings/s
 
-bool sensorOK = false;
-float baseline_hPa = 0;
+float zeroV = 0.5;
 
 bool recording = false;
 bool finished = false;
 unsigned long recordStart = 0;
 unsigned long lastCountdown = 0;
-float samples[MAX_SAMPLES];
+float samples[MAX_SAMPLES];         // stored in psi
 int sampleCount = 0;
+int testNumber = 0;
 
-void tare() {
-  float sum = 0;
-  int good = 0;
-  for (int i = 0; i < 30; i++) {
-    float p = mpr.readPressure();
-    if (!isnan(p)) { sum += p; good++; }
-    delay(10);
-  }
-  if (good > 0) baseline_hPa = sum / good;
+float readVolts() {
+  long sum = 0;
+  for (int i = 0; i < 20; i++) sum += analogRead(PRESSURE_PIN);
+  return (sum / 20.0) * 5.0 / 1023.0;
 }
 
-void trySensor() {
-  sensorOK = mpr.begin();
-  if (sensorOK) tare();
+void zeroSensor() {
+  zeroV = readVolts();              // nothing pushing on the sensor
+  Serial.print(F("Zero voltage: "));
+  Serial.println(zeroV, 3);
+}
+
+void startTest() {
+  testNumber++;
+  recording = true;
+  finished = false;
+  sampleCount = 0;
+  lastCountdown = 0;
+  Serial.println();
+  Serial.print(F("TEST "));
+  Serial.print(testNumber);
+  Serial.println(F(": RECORDING for 20 seconds - push the syringe now!"));
+  recordStart = millis();
 }
 
 void printResults(float elapsed) {
@@ -61,84 +68,73 @@ void printResults(float elapsed) {
   }
 
   Serial.println();
-  Serial.println("===== TEST DONE =====");
-  Serial.print("Peak pressure: ");
+  Serial.print(F("===== TEST "));
+  Serial.print(testNumber);
+  Serial.println(F(" DONE ====="));
+  Serial.print(F("Peak pressure: "));
+  Serial.print(samples[peakIndex] * KPA_PER_PSI, 1);
+  Serial.print(F(" kPa ("));
   Serial.print(samples[peakIndex], 2);
-  Serial.print(" PSI at ");
+  Serial.print(F(" psi) at "));
   Serial.print(peakIndex * interval, 1);
-  Serial.println(" seconds");
-  Serial.println("Copy the ONE line below that starts with DATA:");
+  Serial.println(F(" seconds"));
+  Serial.println(F("Copy the ONE line below that starts with DATA:"));
 
-  // DATA,<seconds between readings>,<reading 1>,<reading 2>,...
-  Serial.print("DATA,");
+  // DATA,<seconds between readings>,<reading 1 in psi>,<reading 2 in psi>,...
+  Serial.print(F("DATA,"));
   Serial.print(interval, 3);
   for (int i = 0; i < sampleCount; i++) {
-    Serial.print(",");
+    Serial.print(',');
     Serial.print(samples[i], 2);
   }
   Serial.println();
-  Serial.println("Type r to record another test, or p for the live plotter.");
+  Serial.println();
+  Serial.println(F(">>> Type r + Enter to run another test, t to re-zero, p for live readings."));
+}
+
+void handleCommand(char c) {
+  if (c == 'r' || c == 'R') {
+    startTest();
+  } else if (c == 't' || c == 'T') {
+    if (recording) {
+      Serial.println(F("Can't re-zero during a test - wait until it finishes."));
+    } else {
+      zeroSensor();
+    }
+  } else if (c == 'p' || c == 'P') {
+    recording = false;
+    finished = false;
+  }
+  // anything else (Enter, spaces, other letters) is ignored
 }
 
 void setup() {
-  Serial.begin(115200);
-  delay(1500);          // give the USB connection time to start
-  trySensor();
+  Serial.begin(9600);
+  delay(500);
+  zeroSensor();                     // nothing pushing on the sensor at startup
+  Serial.println(F("Type r + Enter to record a 20 second test."));
 }
 
 void loop() {
-  if (Serial.available()) {
-    char c = Serial.read();
-    if (c == 't' && sensorOK) tare();
-    if (c == 'r') {
-      recording = true;
-      finished = false;
-      sampleCount = 0;
-      recordStart = millis();
-      lastCountdown = 0;
-      Serial.println();
-      Serial.println("RECORDING for 20 seconds - push the syringe now!");
-    }
-    if (c == 'p') { recording = false; finished = false; }
+  while (Serial.available()) {
+    handleCommand(Serial.read());
   }
 
-  float gauge_psi = 0;
-  if (!sensorOK) {
-    trySensor();        // keep retrying until the sensor is found
-  } else {
-    float p = mpr.readPressure();
-    if (isnan(p)) sensorOK = false;
-    else gauge_psi = (p - baseline_hPa) * HPA_TO_PSI;
-  }
+  float v = readVolts();
+  float kPa = (v - zeroV) / 4.0 * P_MAX_KPA;
+  float psi = kPa / KPA_PER_PSI;
 
   if (recording) {
     float elapsed = (millis() - recordStart) / 1000.0;
-    if (sampleCount < MAX_SAMPLES) samples[sampleCount++] = gauge_psi;
+    if (sampleCount < MAX_SAMPLES) samples[sampleCount++] = psi;
 
     // One short status line per second so you can see it working
     if (millis() - lastCountdown >= 1000) {
       lastCountdown = millis();
-      Serial.print("  ");
+      Serial.print(F("  "));
       Serial.print((int)(RECORD_SECONDS - elapsed + 0.5));
-      Serial.print(" s left   pressure now: ");
-      Serial.print(gauge_psi, 2);
-      Serial.println(" PSI");
-    }
-
-    if (elapsed >= RECORD_SECONDS || sampleCount >= MAX_SAMPLES) {
-      recording = false;
-      finished = true;
-      printResults(elapsed);
-    }
-  } else if (!finished) {
-    // Live plotter format
-    Serial.print("Muscle_Pressure_PSI:");
-    Serial.print(gauge_psi, 3);
-    Serial.print(",Sensor_OK:");
-    Serial.print(sensorOK ? 1 : 0);
-    Serial.print(",Sensor_Limit:");
-    Serial.println(MAX_GAUGE_PSI);
-  }
-
-  delay(75);
-}
+      Serial.print(F(" s left   pressure now: "));
+      Serial.print(kPa, 1);
+      Serial.print(F(" kPa ("));
+      Serial.print(psi, 2);
+      Serial.println(F("
