@@ -10,7 +10,7 @@
  *   Type r and press Enter, then push/hold/release the syringe.
  *   After 20 seconds it prints the peak pressure and ONE line that
  *   starts with DATA. Copy just that one line and paste it into the
- *   Muscle Pressure Graph page (or send it to Claude).
+ *   Muscle Pressure Graph page.
  *
  * Other commands: t = re-zero (syringe untouched), p = back to plotter.
  */
