@@ -137,4 +137,23 @@ void loop() {
       Serial.print(kPa, 1);
       Serial.print(F(" kPa ("));
       Serial.print(psi, 2);
-      Serial.println(F("
+      Serial.println(F(" psi)"));
+    }
+
+    if (elapsed >= RECORD_SECONDS || sampleCount >= MAX_SAMPLES) {
+      recording = false;
+      finished = true;
+      printResults(elapsed);
+    }
+    delay(100);                     // ~10 readings per second while recording
+  } else if (!finished) {
+    // Live readings (same format as before)
+    Serial.print(F("V = "));   Serial.print(v, 3);
+    Serial.print(F("   P = ")); Serial.print(kPa, 1);
+    Serial.print(F(" kPa   (")); Serial.print(psi, 2);
+    Serial.println(F(" psi)"));
+    delay(200);
+  } else {
+    delay(50);                      // waiting for the next command
+  }
+}
