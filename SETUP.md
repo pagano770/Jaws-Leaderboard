@@ -65,7 +65,7 @@ Only one program can use the serial port at a time, so close the Arduino Serial 
 ## 6. Jaw force calculator and muscle tools
 
 - **Jaw force calculator:** students open `tools/jaw-calculator.html` from the [project page](https://pagano770.github.io/Jaws-Leaderboard/guide.html) or the link on the team station. Nothing to install and no sign-in. Under **Leaderboard** they pick their class and team slot to load their squeezes or send their calculated forces to the scoreboard.
-- **Muscle force vs. pressure (Phase 1):** wire the 0–80 psi pressure sensor to A0 on the same Uno as the HX711, upload `arduino/muscle_force_pressure/muscle_force_pressure.ino`, and paste its output into `tools/force-pressure.html`. The guide page has the full test steps. It uses the same HX711 pins (DT 3, SCK 2) as the leaderboard rigs. If you borrow a leaderboard Uno, upload `jaw_force_sensor.ino` again before class day.
+- **Muscle force vs. pressure (Phase 1):** wire the 0–80 psi pressure sensor to A0 on the same Uno as the HX711, upload `arduino/muscle_force_pressure/muscle_force_pressure.ino`, and paste its output into `tools/muscle-characterization.html`. The guide page has the full test steps. It uses the same HX711 pins (DT 3, SCK 2) as the leaderboard rigs. If you borrow a leaderboard Uno, upload `jaw_force_sensor.ino` again before class day.
 - **Muscle pressure and leak tests:** wire the Adafruit MPRLS sensor to the UNO R4 WiFi over I²C (Qwiic/STEMMA cable or SDA/SCL), install **Adafruit MPRLS Library** in Library Manager, and upload `arduino/muscle_pressure_logger/muscle_pressure_logger.ino`. Type `r` in the Serial Monitor (115200 baud) to record 20 seconds, then paste the DATA line into `tools/muscle-pressure.html`. Stay under 9 psi.
 
 ## Troubleshooting
