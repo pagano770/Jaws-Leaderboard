@@ -625,6 +625,12 @@ async function connect() {
   st.writer = enc.writable.getWriter();
   setConnected(true);
   $("liveState").textContent = "Starting up and zeroing…";
+  st.lastReading = performance.now();
+  clearInterval(st.watch);
+  st.watch = setInterval(() => {
+    if (!st.port) return clearInterval(st.watch);
+    if (performance.now() - st.lastReading > 6000) { $("liveState").textContent = NO_HX711; $("liveNum").innerHTML = "–<small> N</small>"; }
+  }, 1000);
   let buf = "";
   try {
     while (true) {
@@ -646,11 +652,17 @@ async function cleanup() {
   try { await st.readClosed; await st.writeClosed; } catch {}
   try { st.port && (await st.port.close()); } catch {}
   st.port = st.reader = st.writer = null;
+  clearInterval(st.watch);
   setConnected(false);
 }
 
+const NO_HX711 = "No readings from the load cell. Check the HX711 wires (VCC → 5V, GND → GND, DT → pin 3, SCK → pin 2), then reconnect.";
 function handleLine(line) {
+  st.lastLine = performance.now();
+  if (line.startsWith("F:") || line.startsWith("R:")) st.lastReading = performance.now();
   if (line.startsWith("F:")) { const f = parseFloat(line.slice(2)); if (!isNaN(f)) onForce(f); }
+  else if (line === "ERR:NOHX711") { $("liveState").textContent = NO_HX711; $("liveNum").innerHTML = "–<small> N</small>"; }
+  else if (line === "INFO:busy") { $("liveState").textContent = "Working… keep the load cell still (about 2 seconds)"; }
   else if (line.startsWith("R:")) { $("liveState").textContent = "Not calibrated yet. Open Calibrate this rig below."; $("liveNum").innerHTML = "–<small> N</small>"; }
   else if (line === "OK:TARE") toast("Zeroed");
   else if (line.startsWith("OK:CAL")) toast("Calibrated and saved on the Arduino");
@@ -735,6 +747,8 @@ function initStation() {
   $("calBtn").addEventListener("click", () => {
     const g = parseFloat($("massInput").value);
     if (!(g > 0)) return toast("Enter the known mass in grams first");
+    $("liveState").textContent = "Calibrating… keep the mass still (about 2 seconds)";
+    st.lastReading = performance.now();
     send("c " + g);
   });
   $("myTrials").addEventListener("click", e => {
