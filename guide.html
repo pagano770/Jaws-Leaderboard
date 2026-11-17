@@ -7,48 +7,37 @@
 <base target="_blank">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐢</text></svg>">
 <style>
-:root { --bg: #f6f1e9; --panel: #fff; --ink: #2a1a12; --muted: #6e5a4c; --line: #e4d9cb; --air: #57150B; --gold: #ffcc00; }
-* { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
-main { max-width: 960px; margin: 0 auto; padding: 36px 20px 60px; display: flex; flex-direction: column; gap: 28px; }
-header { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px 48px; align-items: end; padding-bottom: 18px; border-bottom: 4px solid var(--air); }
-.kicker { font-size: 12px; font-weight: bold; letter-spacing: .12em; text-transform: uppercase; color: var(--air); margin-bottom: 10px; }
-h1 { font-size: clamp(36px, 6vw, 56px); line-height: 1; letter-spacing: -.025em; margin: 0; }
-header p { margin: 14px 0 0; color: var(--muted); max-width: 56ch; }
-.tblock { margin: 0; display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--ink); font-size: 12px; }
-.tblock div { padding: 7px 12px 8px 0; border-bottom: 1px solid var(--line); }
-.tblock dt { font-size: 10px; font-weight: bold; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
-.tblock dd { margin: 1px 0 0; font-weight: bold; }
-section { background: var(--panel); border: 1px solid var(--line); border-top: 3px solid var(--air); padding: 18px 22px 20px; }
-h2 { font-size: 22px; letter-spacing: -.015em; margin: 0 0 12px; color: var(--ink); }
-a { color: var(--air); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+body {
+  margin: 0; background: #fff; color: #1d1d1d;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.5;
+}
+main { max-width: 780px; margin: 0 auto; padding: 32px 20px 60px; }
+h1 { font-size: 32px; margin: 0; }
+.sub { color: #555; margin: 2px 0 0; }
+hr { border: 0; border-top: 3px solid #57150B; margin: 16px 0 24px; }
+h2 { font-size: 21px; margin: 32px 0 8px; color: #57150B; }
+a { color: #57150B; }
 p { margin: 0 0 12px; }
-table { border-collapse: collapse; width: 100%; margin: 0 0 12px; font-size: 15px; }
-th, td { text-align: left; vertical-align: top; padding: 9px 12px 9px 0; border-bottom: 1px solid var(--line); }
-th { font-size: 10.5px; font-weight: bold; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--ink); }
-td:first-child { white-space: nowrap; padding-right: 20px; font-weight: bold; }
-ol, ul { margin: 0; padding-left: 22px; }
-li { margin-bottom: 6px; }
-li::marker { color: var(--air); font-weight: bold; }
-code { font-family: inherit; background: var(--bg); border: 1px solid var(--line); padding: 0 5px; }
-.small { font-size: 14px; color: var(--muted); margin: 0; }
-footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 14px; }
-@media (max-width: 760px) { header { grid-template-columns: 1fr; } }
-@media (max-width: 560px) { td:first-child { white-space: normal; } td a { overflow-wrap: anywhere; } th, td { padding-right: 8px; } section { padding: 16px; } }
+table { border-collapse: collapse; width: 100%; margin: 4px 0 12px; }
+th, td { text-align: left; vertical-align: top; padding: 7px 10px 7px 0; border-bottom: 1px solid #ddd; }
+th { font-size: 14px; color: #555; font-weight: bold; border-bottom: 1px solid #999; }
+td:first-child { white-space: nowrap; padding-right: 16px; }
+ol, ul { margin: 0 0 12px; padding-left: 22px; }
+li { margin-bottom: 4px; }
+code { font-family: inherit; background: #f2f2f2; padding: 0 4px; }
+.small { font-size: 14px; color: #555; }
+footer { margin-top: 40px; font-size: 14px; color: #555; }
+@media (max-width: 560px) { td:first-child { white-space: normal; } td a { overflow-wrap: anywhere; } th, td { padding-right: 8px; } }
 </style>
 </head>
 <body>
 <main>
-  <header>
-    <div>
-      <div class="kicker">Rowan University / Soft Robotics Clinic</div>
-      <h1>JAWS Project</h1>
-      <p>This page has the links and files for our jaw project. Students use these during the jaw testing and for the muscle tests in Phase 1. Everything runs in a web browser, so there is nothing to install and no sign-in.</p>
-    </div>
-    <dl class="tblock"><div><dt>Project</dt><dd>McKibben muscle jaw</dd></div><div><dt>Term</dt><dd>Fall 2026</dd></div><div><dt>Group</dt><dd>Soft Robotics Clinic</dd></div><div><dt>Tools</dt><dd>5 pages, 3 sketches</dd></div></dl>
-  </header>
+  <h1>JAWS Project</h1>
+  <p class="sub">McKibben muscle jaw, Soft Robotics Clinic, Rowan University, Fall 2026</p>
+  <hr>
 
-  <section>
+  <p>This page has the links and files for our jaw project. Students use these during the jaw testing and for the muscle tests in Phase 1. Everything runs in a web browser, so there is nothing to install and no sign-in.</p>
+
   <h2>Pages</h2>
   <table>
     <tr><th>Link</th><th>What it does</th></tr>
@@ -58,9 +47,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
     <tr><td><a href="tools/muscle-characterization.html">Muscle characterization</a></td><td>Paste in the force/pressure logger output. It fits F = P(c₁ − c₂ε), predicts muscle force for any pressure and contraction, and saves the model so the jaw calculator can use it.</td></tr>
     <tr><td><a href="tools/muscle-pressure.html">Muscle pressure</a></td><td>Graphs pressure over time from the pressure logger and gives the peak pressure and leak rate.</td></tr>
   </table>
-  </section>
 
-  <section>
   <h2>Arduino code</h2>
   <table>
     <tr><th>File</th><th>Hardware</th><th>Used for</th></tr>
@@ -69,9 +56,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
     <tr><td><a href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/arduino/muscle_pressure_logger/muscle_pressure_logger.ino">muscle_pressure_logger.ino</a></td><td>UNO R4 WiFi, Adafruit MPRLS sensor</td><td>Muscle pressure / leak tests</td></tr>
   </table>
   <p class="small">The load cell sketches need the "HX711 Arduino Library" by Bogdan Necula, and the pressure logger needs the "Adafruit MPRLS Library". Both are in the Arduino Library Manager.</p>
-  </section>
 
-  <section>
   <h2>Phase 1: force vs. pressure test</h2>
   <ol>
     <li>Hang the muscle from the load cell, with the syringe, tee and pressure sensor on the same air line.</li>
@@ -82,9 +67,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
     <li>Do the same at two or more other lengths. Type <code>n</code> before repeating a trial.</li>
     <li>Paste everything from the Serial Monitor into the <a href="tools/muscle-characterization.html">muscle characterization page</a> and enter the muscle's length, diameter and braid turns.</li>
   </ol>
-  </section>
 
-  <section>
   <h2>Phase 1: pressure and leak test</h2>
   <ol>
     <li>Upload <code>muscle_pressure_logger.ino</code> to the UNO R4. The Serial Plotter shows the pressure live.</li>
@@ -92,9 +75,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
     <li>Copy the line that starts with DATA and paste it into the <a href="tools/muscle-pressure.html">muscle pressure page</a>. Paste more DATA lines to average several tests.</li>
     <li>Keep it under 9 psi so the sensor doesn't get damaged.</li>
   </ol>
-  </section>
 
-  <section>
   <h2>Setup and other links</h2>
   <ul>
     <li><a href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/SETUP.md">Setup guide</a>: wiring, Firebase, and class day</li>
@@ -103,7 +84,6 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
     <li>MATLAB version of the calculator, for desktop MATLAB: <a href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/jaw_force_app.m">jaw_force_app.m</a></li>
     <li>All files: <a href="https://github.com/pagano770/Jaws-Leaderboard">github.com/pagano770/Jaws-Leaderboard</a></li>
   </ul>
-  </section>
 
   <footer>Soft Robotics Clinic, Fall 2026: Chidera Anyanwu, Brandon De La Puente, Blanca Rivera, Kieran McGovern, Gabriella Pagano, David Weaver</footer>
 </main>
