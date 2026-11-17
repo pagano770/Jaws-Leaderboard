@@ -10,6 +10,8 @@
     Sends   F:<newtons>        calibrated force reading (~10 per second)
             R:<raw>            raw reading, sent only until the rig is calibrated
             OK:TARE / OK:CAL:<factor> / ERR:<why> / INFO:<status>
+            ERR:NOHX711 if the HX711 stops answering (check the wiring);
+            the sketch never waits forever, so it can't freeze.
     Accepts t                  zero the scale (jaw must be unloaded)
             c <grams>          calibrate using a known mass sitting on the load cell
             ?                  report status
@@ -38,6 +40,34 @@ float factor = 1.0;
 bool calibrated = false;
 char cmd[24];
 byte cmdLen = 0;
+unsigned long lastReading = 0;   // millis() of the last good HX711 reading
+unsigned long lastWarning = 0;
+
+// Average n raw readings, giving up if the HX711 doesn't answer within
+// 500 ms. Returns false instead of hanging when a wire is loose.
+bool averageRaw(byte n, double &out) {
+  double sum = 0;
+  for (byte i = 0; i < n; i++) {
+    if (!scale.wait_ready_timeout(500)) return false;
+    sum += scale.read();
+  }
+  out = sum / n;
+  lastReading = millis();
+  return true;
+}
+
+// Zero the scale. Returns false if the HX711 isn't answering.
+bool tareSafe(byte n) {
+  double raw;
+  if (!averageRaw(n, raw)) return false;
+  scale.set_offset((long)raw);
+  return true;
+}
+
+void noHX711() {
+  Serial.println(F("ERR:NOHX711"));
+  lastWarning = millis();
+}
 
 void setup() {
   Serial.begin(115200);
@@ -52,14 +82,20 @@ void setup() {
   scale.set_scale(factor);
 
   delay(500);
-  scale.tare(20);
+  if (!tareSafe(20)) noHX711();
   Serial.println(calibrated ? F("INFO:ready") : F("INFO:not calibrated"));
 }
 
 void loop() {
   readCommands();
 
-  if (scale.is_ready()) {
+  if (!scale.is_ready()) {
+    // No reading for 2 s: the HX711 has stopped answering. Say so every 3 s.
+    if (millis() - lastReading > 2000 && millis() - lastWarning > 3000) noHX711();
+    return;
+  }
+  lastReading = millis();
+  {
     if (calibrated) {
       float newtons = scale.get_units(1) * GRAMS_TO_NEWTONS;
       Serial.print(F("F:"));
@@ -88,15 +124,19 @@ void readCommands() {
 
 void runCommand(const char *c) {
   if (c[0] == 't') {
-    scale.tare(20);
-    Serial.println(F("OK:TARE"));
+    Serial.println(F("INFO:busy"));
+    if (tareSafe(20)) Serial.println(F("OK:TARE"));
+    else noHX711();
   } else if (c[0] == 'c') {
     float grams = atof(c + 1);
     if (grams <= 0) {
       Serial.println(F("ERR:enter a mass above 0 g"));
       return;
     }
-    double reading = scale.get_value(20);  // average minus tare offset
+    Serial.println(F("INFO:busy"));
+    double raw;
+    if (!averageRaw(20, raw)) { noHX711(); return; }
+    double reading = raw - scale.get_offset();  // average minus tare offset
     float newFactor = reading / grams;
     if (fabs(newFactor) < 1e-6) {
       Serial.println(F("ERR:no load detected, check the mass and wiring"));
