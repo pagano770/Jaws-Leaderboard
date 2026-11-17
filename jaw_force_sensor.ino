@@ -95,6 +95,11 @@ void loop() {
     return;
   }
   lastReading = millis();
+  // Send at most 20 readings a second. Some boards (like the UNO R4) can
+  // send thousands a second, which floods the station page and freezes it.
+  static unsigned long lastSent = 0;
+  if (millis() - lastSent < 50) { scale.read(); return; }
+  lastSent = millis();
   {
     if (calibrated) {
       float newtons = scale.get_units(1) * GRAMS_TO_NEWTONS;
