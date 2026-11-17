@@ -36,6 +36,7 @@ h2 { font-size: 1.15rem; margin: 0 0 8px; }
 .hint { margin: 0 0 10px; color: var(--muted); font-size: .88rem; }
 .note-ex { font-style: italic; color: var(--muted); font-size: .88rem; margin: 0; }
 .settings { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px 16px; margin-bottom: 14px; }
+[hidden] { display: none !important; }
 .settings label { display: flex; flex-direction: column; gap: 3px; font-size: .85rem; color: var(--muted); }
 input, select { font-size: .92rem; padding: 5px 7px; border: 1px solid var(--line); border-radius: 3px; background: var(--bg); color: var(--ink); min-width: 0; }
 input[type=number] { font-variant-numeric: tabular-nums; }
@@ -47,6 +48,11 @@ th small { display: block; font-weight: normal; }
 #geo td input { width: 64px; }
 #geo td input.meas { width: 150px; }
 #geo td:first-child, #res td:first-child { font-weight: bold; }
+#geo.class .pcol, #geo.measured .bcol { display: none; }
+#geo td input.pin { width: 64px; }
+.mmbox { border: 1px solid var(--line); border-radius: 3px; padding: 10px 12px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px; font-size: .9rem; }
+.mmbox .buttons a { font-size: .88rem; }
+.mmpaste { display: flex; flex-direction: column; gap: 3px; color: var(--muted); font-size: .85rem; }
 .ok { color: var(--ok); } .bad { color: var(--bad); }
 .buttons { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 button { font-size: .88rem; font-weight: bold; padding: 7px 13px; border-radius: 3px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
@@ -98,15 +104,22 @@ canvas { display: block; width: 100%; height: 100%; }
     <div class="settings">
       <label>Team name<input type="text" id="team" maxlength="24"></label>
       <label>Muscle force<select id="mode"><option value="1">Sum of both muscles</option><option value="2">Average of both muscles</option></select></label>
-      <label>Muscle coefficient a (N/mm)<input type="number" id="a" step="0.1"></label>
+      <label>Muscle model<select id="mm"><option value="class">Class model: a(x − b)</option><option value="measured">Measured muscle model</option></select></label>
+      <label id="aLbl">Muscle coefficient a (N/mm)<input type="number" id="a" step="0.1"></label>
+      <label id="sPLbl" hidden>Pressure uncertainty (psi)<input type="number" id="sP" step="0.1" min="0"></label>
       <label>Length uncertainty (mm)<input type="number" id="sL" step="0.1" min="0"></label>
       <label>Distance uncertainty (mm)<input type="number" id="sA" step="0.1" min="0"></label>
       <label>Angle uncertainty (deg)<input type="number" id="sT" step="0.5" min="0"></label>
     </div>
-    <p class="hint">All distances in mm, measured from your free-body diagram. θ is how far the muscle tilts from vertical. R_MX and R_MY are the sideways and up-down distances from the hinge to where the muscle pulls, and R_LC is the distance from the hinge to the load cell. b is how much each muscle shortens with no load, and x is how much it shortens while pressing the load cell. Measured squeezes are in newtons, separated by commas.</p>
+    <div class="mmbox" id="mmBox" hidden>
+      <div><b>Measured model:</b> <span id="mmDesc">none loaded</span></div>
+      <div class="buttons"><button type="button" id="mmLoad">Load saved model</button><button type="button" id="mmEx">Use example model</button><a href="muscle-characterization.html" target="_blank" rel="noopener">Make one on the Muscle Characterization page</a></div>
+      <label class="mmpaste">Or paste model code<input type="text" id="mmCode" placeholder="JAWSMODEL:{…}" spellcheck="false"></label>
+    </div>
+    <p class="hint" id="geoHint">All distances in mm, measured from your free-body diagram. θ is how far the muscle tilts from vertical. R_MX and R_MY are the sideways and up-down distances from the hinge to where the muscle pulls, and R_LC is the distance from the hinge to the load cell. b is how much each muscle shortens with no load, and x is how much it shortens while pressing the load cell. Measured squeezes are in newtons, separated by commas.</p>
     <div class="table-scroll">
       <table id="geo">
-        <thead><tr><th>Orientation</th><th>θ<small>deg</small></th><th>R_MX<small>mm</small></th><th>R_MY<small>mm</small></th><th>R_LC<small>mm</small></th><th>b1<small>mm</small></th><th>b2<small>mm</small></th><th>x1<small>mm</small></th><th>x2<small>mm</small></th><th>Measured squeezes<small>N, e.g. 9.1, 9.6</small></th></tr></thead>
+        <thead><tr><th>Orientation</th><th>θ<small>deg</small></th><th>R_MX<small>mm</small></th><th>R_MY<small>mm</small></th><th>R_LC<small>mm</small></th><th class="bcol">b1<small>mm</small></th><th class="bcol">b2<small>mm</small></th><th>x1<small>mm</small></th><th>x2<small>mm</small></th><th class="pcol">Pressure<small>psi</small></th><th>Measured squeezes<small>N, e.g. 9.1, 9.6</small></th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -129,8 +142,8 @@ canvas { display: block; width: 100%; height: 100%; }
   </section>
 
   <section class="stats">
-    <div class="panel stat"><div class="k">Your muscle coefficient (least squares)</div><div class="v" id="sAfit">–</div><div class="sub" id="sAfitS"></div></div>
-    <div class="panel stat"><div class="k">R² of that fit</div><div class="v" id="sR2">–</div><div class="sub" id="sR2s"></div></div>
+    <div class="panel stat"><div class="k" id="kA">Your muscle coefficient (least squares)</div><div class="v" id="sAfit">–</div><div class="sub" id="sAfitS"></div></div>
+    <div class="panel stat"><div class="k" id="kB">R² of that fit</div><div class="v" id="sR2">–</div><div class="sub" id="sR2s"></div></div>
     <div class="panel stat"><div class="k">Average % error</div><div class="v" id="sErr">–</div><div class="sub" id="sErrS"></div></div>
     <div class="panel stat"><div class="k">Strongest predicted</div><div class="v" id="sBest">–</div><div class="sub" id="sBestS"></div></div>
   </section>
@@ -178,6 +191,9 @@ canvas { display: block; width: 100%; height: 100%; }
   const DB_URL = "https://jaws-leaderboard-default-rtdb.firebaseio.com";
   const STORE = "jaw-calculator-v1";
   const QN = ["θ", "R_MX", "R_MY", "R_LC", "b1", "b2", "x1", "x2"];
+  const QN_M = ["θ", "R_MX", "R_MY", "R_LC", "x1", "x2", "P"];
+  const KPA = 6.894757, MODEL = "jaws-muscle-model-v1";
+  const EX_MODEL = { v: 1, name: "Example muscle (made-up data)", c1: 0.1223, c2: 0.5217, c0: -2.44, L0: 200, R2: 0.98, example: true };
 
   // ---------- example (same numbers as the MATLAB app's example) ----------
   function example() {
@@ -186,42 +202,97 @@ canvas { display: block; width: 100%; height: 100%; }
       geom: [[5, 22, 12, 95, 25, 24, 15, 16], [8, 26, 12, 95, 25, 24, 14, 14], [10, 34, 12, 95, 25, 24, 13, 14],
              [30, 18, 14, 95, 25, 24, 17, 17], [20, 28, 16, 95, 25, 24, 14, 15], [12, 31, 14, 95, 25, 24, 12, 13],
              [18, 25, 15, 95, 25, 24, 15, 15]],
-      meas: [[9.1, 9.6, 8.8], [11.2, 10.4, 11.0], [14.8, 15.5, 14.1], [7.9, 8.6, 8.1], [12.9, 13.8, 12.2], [15.9, 16.8, 16.1], []]
+      meas: [[9.1, 9.6, 8.8], [11.2, 10.4, 11.0], [14.8, 15.5, 14.1], [7.9, 8.6, 8.1], [12.9, 13.8, 12.2], [15.9, 16.8, 16.1], []],
+      mm: "class", press: [25, 25, 25, 25, 25, 25, 25], sP: 0.5, mdl: null
     };
   }
   function blank() {
     return { team: "", mode: 1, a: -1.6, sL: 0.5, sA: 1.0, sT: 2.0, isExample: false,
-             geom: LABELS.map(() => Array(8).fill(NaN)), meas: LABELS.map(() => []) };
+             geom: LABELS.map(() => Array(8).fill(NaN)), meas: LABELS.map(() => []), mm: D ? D.mm : "class", press: LABELS.map(() => NaN), sP: 0.5, mdl: D ? D.mdl : null };
   }
   let D;
   try { D = JSON.parse(localStorage.getItem(STORE)); } catch (e) { D = null; }
   if (!D || !Array.isArray(D.geom)) D = example();
   D.geom = D.geom.map(r => r.map(v => v === null ? NaN : v));
+  if (!D.mm) D.mm = "class";
+  if (!Array.isArray(D.press)) D.press = LABELS.map(() => NaN);
+  D.press = D.press.map(v => v === null ? NaN : v);
+  if (!isFinite(D.sP)) D.sP = 0.5;
+  function storedModel() { try { const m = JSON.parse(localStorage.getItem(MODEL)); return validModel(m) ? m : null; } catch (e) { return null; } }
+  function validModel(m) { return m && ["c1", "c2", "c0", "L0"].every(k => isFinite(m[k])) && m.L0 > 0; }
+  if (!D.mdl) D.mdl = storedModel();
   function save() { try { localStorage.setItem(STORE, JSON.stringify(D)); } catch (e) {} }
 
   // ---------- inputs ----------
   function buildInputs() {
     $("geo").querySelector("tbody").innerHTML = LABELS.map((L, i) =>
       "<tr><td>" + L + "</td>" + D.geom[i].map((v, j) =>
-        "<td><input type='number' step='any' data-r='" + i + "' data-c='" + j + "' aria-label='" + L + " " + QN[j] + "' value='" + (isFinite(v) ? v : "") + "'></td>").join("") +
+        "<td" + (j === 4 || j === 5 ? " class='bcol'" : "") + "><input type='number' step='any' data-r='" + i + "' data-c='" + j + "' aria-label='" + L + " " + QN[j] + "' value='" + (isFinite(v) ? v : "") + "'></td>").join("") +
+      "<td class='pcol'><input class='pin' type='number' step='any' min='0' data-p='" + i + "' aria-label='" + L + " pressure in psi' value='" + (isFinite(D.press[i]) ? D.press[i] : "") + "'></td>" +
       "<td><input class='meas' type='text' inputmode='decimal' data-m='" + i + "' aria-label='" + L + " measured squeezes' value='" + D.meas[i].join(", ") + "'></td></tr>").join("");
     $("team").value = D.team; $("mode").value = String(D.mode); $("a").value = D.a;
     $("sL").value = D.sL; $("sA").value = D.sA; $("sT").value = D.sT;
+    $("mm").value = D.mm; $("sP").value = D.sP;
     $("exNote").hidden = !D.isExample;
+    showMode();
+  }
+  function showMode() {
+    const meas = D.mm === "measured";
+    $("geo").className = meas ? "measured" : "class";
+    $("aLbl").hidden = meas; $("sPLbl").hidden = !meas; $("mmBox").hidden = !meas;
+    $("mmDesc").textContent = D.mdl ? D.mdl.name + ": F = P(" + D.mdl.c1 + " − " + D.mdl.c2 + "ε) " + (D.mdl.c0 >= 0 ? "+ " : "− ") + Math.abs(D.mdl.c0) + ", L₀ = " + D.mdl.L0 + " mm" + (isFinite(D.mdl.R2) ? ", R² = " + D.mdl.R2 : "") + (D.mdl.date ? " (" + D.mdl.date + ")" : "") : "none loaded yet";
+    $("geoHint").textContent = meas
+      ? "All distances in mm, measured from your free-body diagram. θ is how far the muscle tilts from vertical. R_MX and R_MY are the sideways and up-down distances from the hinge to where the muscle pulls, and R_LC is the distance from the hinge to the load cell. x is how much each muscle is shorter than its relaxed length L₀ while pressing the load cell, and Pressure is the pressure during the squeeze. Measured squeezes are in newtons, separated by commas."
+      : "All distances in mm, measured from your free-body diagram. θ is how far the muscle tilts from vertical. R_MX and R_MY are the sideways and up-down distances from the hinge to where the muscle pulls, and R_LC is the distance from the hinge to the load cell. b is how much each muscle shortens with no load, and x is how much it shortens while pressing the load cell. Measured squeezes are in newtons, separated by commas.";
   }
   function parseMeas(s) { return String(s).split(/[,;\s]+/).map(parseFloat).filter(v => isFinite(v)); }
   function readInputs() {
     document.querySelectorAll("#geo input[data-r]").forEach(el => { const v = parseFloat(el.value); D.geom[+el.dataset.r][+el.dataset.c] = isFinite(v) ? v : NaN; });
     document.querySelectorAll("#geo input[data-m]").forEach(el => D.meas[+el.dataset.m] = parseMeas(el.value));
+    document.querySelectorAll("#geo input[data-p]").forEach(el => { const v = parseFloat(el.value); D.press[+el.dataset.p] = isFinite(v) ? v : NaN; });
+    D.mm = $("mm").value;
     D.team = $("team").value; D.mode = +$("mode").value;
     const num = (id, d) => { const v = parseFloat($(id).value); return isFinite(v) ? v : d; };
     D.a = num("a", -1.6); D.sL = Math.max(0, num("sL", 0)); D.sA = Math.max(0, num("sA", 0)); D.sT = Math.max(0, num("sT", 0));
+    D.sP = Math.max(0, num("sP", 0));
   }
 
   // ---------- the model (same equations as jaw_force_app.m) ----------
   const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
   const sd = a => { if (a.length < 2) return 0; const m = mean(a); return Math.sqrt(a.reduce((s, x) => s + (x - m) ** 2, 0) / (a.length - 1)); };
   function model() {
+    return D.mm === "measured" ? measuredModel() : classModel();
+  }
+  // measured muscle model: F_Mi = P(c1 - c2 x_i / L0) + c0, P in kPa
+  function measuredModel() {
+    const c = D.mode === 2 ? 0.5 : 1, md = D.mdl;
+    const sig = [D.sT * Math.PI / 180, D.sA, D.sA, D.sA, D.sL, D.sL, D.sP * KPA];
+    const rows = D.geom.map((g, i) => {
+      const [thD, RMX, RMY, RLC, , , x1, x2] = g, th = thD * Math.PI / 180, psi = D.press[i], P = psi * KPA;
+      const R = { i, label: LABELS[i], valid: !!md && [thD, RMX, RMY, RLC, x1, x2, psi].every(v => isFinite(v)) && RLC > 0 };
+      const m = D.meas[i];
+      R.measN = m.length; R.measMean = m.length ? mean(m) : NaN; R.measSD = m.length > 1 ? sd(m) : (m.length ? 0 : NaN);
+      if (!R.valid) return R;
+      R.P = P; R.psi = psi; R.e1 = x1 / md.L0; R.e2 = x2 / md.L0;
+      R.FM1 = P * (md.c1 - md.c2 * R.e1) + md.c0; R.FM2 = P * (md.c1 - md.c2 * R.e2) + md.c0; R.FM = c * (R.FM1 + R.FM2);
+      R.arm = RMX * Math.cos(th) + RMY * Math.sin(th);
+      R.tau = R.FM * R.arm; R.F = R.tau / RLC;
+      const dx = c * (-md.c2 * P / md.L0) * R.arm / RLC, dP = c * ((md.c1 - md.c2 * R.e1) + (md.c1 - md.c2 * R.e2)) * R.arm / RLC;
+      R.dF = [R.FM * (RMY * Math.cos(th) - RMX * Math.sin(th)) / RLC, R.FM * Math.cos(th) / RLC, R.FM * Math.sin(th) / RLC, -R.F / RLC, dx, dx, dP];
+      R.contrib = R.dF.map((d, q) => (d * sig[q]) ** 2);
+      R.sigF = Math.sqrt(R.contrib.reduce((s, x) => s + x, 0));
+      R.thetaBest = Math.atan2(RMY, RMX) * 180 / Math.PI;
+      R.Fbest = R.FM * Math.hypot(RMX, RMY) / RLC;
+      R.grad = [R.FM * Math.cos(th) / RLC, R.FM * Math.sin(th) / RLC];
+      if (R.measN > 0 && R.F > 0) { R.pctErr = Math.abs(R.measMean - R.F) / R.F * 100; R.within = Math.abs(R.measMean - R.F) <= 2 * R.sigF; R.ratio = R.measMean / R.F; }
+      return R;
+    });
+    const ratios = rows.filter(R => isFinite(R.ratio)).map(R => R.ratio);
+    return { rows, sig, c, measured: true, qn: QN_M, units: ["N/rad", "N/mm", "N/mm", "N/mm", "N/mm", "N/mm", "N/kPa"],
+      sigLabels: sig.map((v, q) => q === 0 ? f(v, 3) + " rad" : q === 6 ? f(v, 1) + " kPa" : f(v, 1) + " mm"),
+      U: [], k: NaN, aFit: NaN, R2: NaN, eta: ratios.length ? mean(ratios) : NaN, etaN: ratios.length };
+  }
+  function classModel() {
     const c = D.mode === 2 ? 0.5 : 1, a = D.a;
     const sig = [D.sT * Math.PI / 180, D.sA, D.sA, D.sA, D.sL, D.sL, D.sL, D.sL];
     const rows = D.geom.map((g, i) => {
@@ -247,7 +318,8 @@ canvas { display: block; width: 100%; height: 100%; }
     // least squares: F = k u, a_fit = -k
     const U = [], Fm = [];
     rows.forEach(R => { if (R.valid && isFinite(R.u)) D.meas[R.i].forEach(v => { U.push(R.u); Fm.push(v); }); });
-    const M = { rows, sig, c, U, Fm, k: NaN, aFit: NaN, R2: NaN };
+    const M = { rows, sig, c, U, Fm, k: NaN, aFit: NaN, R2: NaN, qn: QN, units: ["N/rad", "N/mm", "N/mm", "N/mm", "N/mm", "N/mm", "N/mm", "N/mm"],
+      sigLabels: sig.map((v, q) => q === 0 ? f(v, 3) + " rad" : f(v, 1) + " mm") };
     const su2 = U.reduce((s, u) => s + u * u, 0);
     if (U.length >= 2 && su2 > 0) {
       M.k = U.reduce((s, u, j) => s + u * Fm[j], 0) / su2; M.aFit = -M.k;
@@ -265,17 +337,28 @@ canvas { display: block; width: 100%; height: 100%; }
     M = model();
     const rows = M.rows;
     $("res").querySelector("tbody").innerHTML = rows.map(R => {
-      if (!R.valid) return "<tr><td>" + R.label + "</td><td colspan='8' style='color:var(--muted)'>Fill in all 8 measurements to calculate</td></tr>";
+      if (!R.valid) return "<tr><td>" + R.label + "</td><td colspan='8' style='color:var(--muted)'>" + (M.measured && !D.mdl ? "Load a measured muscle model above" : M.measured ? "Fill in θ, R_MX, R_MY, R_LC, x1, x2 and pressure to calculate" : "Fill in all 8 measurements to calculate") + "</td></tr>";
       const meas = R.measN ? f(R.measMean, 2) + " ± " + f(R.measSD, 2) + " (" + R.measN + ")" : "–";
       const w = R.within === undefined ? "–" : R.within ? "<span class='ok'>Yes</span>" : "<span class='bad'>No</span>";
       return "<tr><td>" + R.label + "</td><td>" + f(R.FM, 2) + "</td><td>" + f(R.tau, 1) + "</td><td><b>" + f(R.F, 2) + "</b> ± " + f(R.sigF, 2) + "</td><td>" + meas +
         "</td><td>" + (isFinite(R.pctErr) ? f(R.pctErr, 1) + "%" : "–") + "</td><td>" + w + "</td><td>" + f(R.thetaBest, 1) + "</td><td>" + f(R.Fbest, 2) + "</td></tr>";
     }).join("");
 
-    $("sAfit").innerHTML = isFinite(M.aFit) ? f(M.aFit, 2) + "<small>N/mm</small>" : "–";
-    $("sAfitS").textContent = isFinite(M.aFit) ? "class value a = " + f(D.a, 2) + " N/mm" : "needs measured squeezes";
-    $("sR2").textContent = f(M.R2, 3);
-    $("sR2s").textContent = M.U.length ? M.U.length + " squeezes" : "";
+    if (M.measured) {
+      $("kA").textContent = "Measured ÷ calculated (η)";
+      $("sAfit").innerHTML = isFinite(M.eta) ? f(M.eta, 2) : "–";
+      $("sAfitS").textContent = isFinite(M.eta) ? "1.00 = the model is exact; over " + M.etaN + " orientation" + (M.etaN > 1 ? "s" : "") : "needs measured squeezes";
+      $("kB").textContent = "Muscle model fit R²";
+      $("sR2").textContent = D.mdl && isFinite(D.mdl.R2) ? f(D.mdl.R2, 3) : "–";
+      $("sR2s").textContent = D.mdl ? "from the characterization" : "";
+    } else {
+      $("kA").textContent = "Your muscle coefficient (least squares)";
+      $("sAfit").innerHTML = isFinite(M.aFit) ? f(M.aFit, 2) + "<small>N/mm</small>" : "–";
+      $("sAfitS").textContent = isFinite(M.aFit) ? "class value a = " + f(D.a, 2) + " N/mm" : "needs measured squeezes";
+      $("kB").textContent = "R² of that fit";
+      $("sR2").textContent = f(M.R2, 3);
+      $("sR2s").textContent = M.U.length ? M.U.length + " squeezes" : "";
+    }
     const errs = rows.filter(R => isFinite(R.pctErr));
     $("sErr").innerHTML = errs.length ? f(mean(errs.map(R => R.pctErr)), 1) + "<small>%</small>" : "–";
     $("sErrS").textContent = errs.length ? "over " + errs.length + " orientation" + (errs.length > 1 ? "s" : "") : "needs measured squeezes";
@@ -295,14 +378,18 @@ canvas { display: block; width: 100%; height: 100%; }
     const R = M.rows[i], g = D.geom[i], el = $("math");
     $("angOri").textContent = LABELS[i];
     if (!R.valid) { el.innerHTML = "<p>Orientation " + LABELS[i] + " is missing measurements in the Jaw setup table.</p>"; return; }
-    const [th, RMX, RMY, RLC, b1, b2, x1, x2] = g;
+    const [th, RMX, RMY, RLC, b1, b2, x1, x2] = g, md = D.mdl;
     const Fv = [-R.FM * Math.sin(th * Math.PI / 180), R.FM * Math.cos(th * Math.PI / 180)];
     const tot = R.contrib.reduce((s, x) => s + x, 0) || 1;
     const big = R.contrib.indexOf(Math.max(...R.contrib));
-    const units = ["N/rad", "N/mm", "N/mm", "N/mm", "N/mm", "N/mm", "N/mm", "N/mm"];
-    const sq = M.sig.map((s, q) => q === 0 ? f(s, 3) + " rad" : f(s, 1) + " mm");
+    const units = M.units, sq = M.sigLabels, QN = M.qn;
     const s = [];
-    s.push("<section><h3>1. Muscle force <small>(linear McKibben model)</small></h3>" +
+    if (M.measured) s.push("<section><h3>1. Muscle force <small>(measured model from the characterization)</small></h3>" +
+      "<p class='eq'>P = " + f(R.psi, 1) + " psi × 6.895 = " + f(R.P, 1) + " kPa; ε1 = x1 ÷ L₀ = " + f(x1, 1) + " ÷ " + f(md.L0, 0) + " = " + f(R.e1, 4) + "; ε2 = " + f(x2, 1) + " ÷ " + f(md.L0, 0) + " = " + f(R.e2, 4) + "</p>" +
+      "<p class='eq'>F_M1 = P(c₁ − c₂ε1) + c₀ = " + f(R.P, 1) + " × (" + md.c1 + " − " + md.c2 + " × " + f(R.e1, 4) + ") " + (md.c0 >= 0 ? "+ " : "− ") + Math.abs(md.c0) + " = " + f(R.FM1, 2) + " N</p>" +
+      "<p class='eq'>F_M2 = P(c₁ − c₂ε2) + c₀ = " + f(R.P, 1) + " × (" + md.c1 + " − " + md.c2 + " × " + f(R.e2, 4) + ") " + (md.c0 >= 0 ? "+ " : "− ") + Math.abs(md.c0) + " = " + f(R.FM2, 2) + " N</p>" +
+      "<p class='eq'>" + (M.c === 1 ? "F_M = F_M1 + F_M2 (both muscles pull)" : "F_M = (F_M1 + F_M2) ÷ 2 (average of both muscles)") + " = <b>" + f(R.FM, 2) + " N</b></p></section>");
+    else s.push("<section><h3>1. Muscle force <small>(linear McKibben model)</small></h3>" +
       "<p class='eq'>F_M1 = a(x1 − b1) = " + f(D.a, 2) + " × (" + f(x1, 1) + " − " + f(b1, 1) + ") = " + f(R.FM1, 2) + " N</p>" +
       "<p class='eq'>F_M2 = a(x2 − b2) = " + f(D.a, 2) + " × (" + f(x2, 1) + " − " + f(b2, 1) + ") = " + f(R.FM2, 2) + " N</p>" +
       "<p class='eq'>" + (M.c === 1 ? "F_M = F_M1 + F_M2 (both muscles pull)" : "F_M = (F_M1 + F_M2) ÷ 2 (average of both muscles)") + " = <b>" + f(R.FM, 2) + " N</b></p></section>");
@@ -334,6 +421,15 @@ canvas { display: block; width: 100%; height: 100%; }
                   : "<p>The measurement is outside 2σ_F, so something the model leaves out matters here (friction, muscle stretch, bending, the linear muscle model).</p>");
     } else cmp += "<p>No measured squeezes for this orientation yet.</p>";
     s.push(cmp + "</section>");
+    if (M.measured) {
+      const withData = M.rows.filter(r => isFinite(r.ratio));
+      s.push("<section><h3>8. How well the muscle model predicts the jaw <small>(all orientations)</small></h3>" +
+        "<p class='eq'>η = measured ÷ calculated, for each orientation with squeezes</p>" +
+        (withData.length ? "<p class='eq'>" + withData.map(r => r.label + ": " + f(r.measMean, 2) + " ÷ " + f(r.F, 2) + " = " + f(r.ratio, 2)).join("; ") + "</p><p class='eq'>Average η = <b>" + f(M.eta, 2) + "</b></p>" +
+          "<p>Below 1, the jaw loses force the model leaves out (pivot friction, flexing, misalignment). Above 1, the muscle model is underpredicting, which points back to the characterization.</p>"
+          : "<p>Needs measured squeezes for at least one orientation.</p>") + "</section>");
+      el.innerHTML = s.join(""); return;
+    }
     let ls = "<section><h3>8. Your muscle coefficient from least squares <small>(all orientations)</small></h3>" +
       "<p class='eq'>Model: F = k·u, u = c(b1 − x1 + b2 − x2)(R_MX cos θ + R_MY sin θ) ÷ R_LC</p>" +
       "<p class='eq'>Minimize S(k) = Σ(F_i − k u_i)² → dS/dk = 0 → k = Σ(u_i F_i) ÷ Σ(u_i²)</p>";
@@ -425,6 +521,14 @@ canvas { display: block; width: 100%; height: 100%; }
   function markEdited() { if (D.isExample) { D.isExample = false; } }
   document.addEventListener("input", e => { if (e.target.closest("#geo, .settings")) { markEdited(); clearTimeout(update.t); update.t = setTimeout(update, 150); } });
   document.addEventListener("change", e => { if (e.target.closest("#geo, .settings")) { markEdited(); update(); } });
+  $("mm").addEventListener("change", () => { D.mm = $("mm").value; markEdited(); showMode(); update(); });
+  $("mmLoad").addEventListener("click", () => { const m = storedModel(); if (m) { D.mdl = m; showMode(); update(); $("status").className = "status"; $("status").textContent = "Loaded " + m.name + "."; } else { $("status").className = "status err"; $("status").textContent = "No saved model in this browser yet. Save one on the Muscle Characterization page."; } });
+  $("mmEx").addEventListener("click", () => { D.mdl = Object.assign({}, EX_MODEL); showMode(); update(); });
+  $("mmCode").addEventListener("input", () => {
+    const t = $("mmCode").value.trim().replace(/^JAWSMODEL:/, "");
+    try { const m = JSON.parse(t); if (validModel(m)) { D.mdl = m; showMode(); update(); $("status").className = "status"; $("status").textContent = "Loaded " + (m.name || "model") + " from the code."; $("mmCode").value = ""; return; } } catch (e) {}
+    if (t) { $("status").className = "status err"; $("status").textContent = "That doesn't look like a complete model code yet."; }
+  });
   $("mathOri").addEventListener("change", () => { renderMath(LABELS.indexOf($("mathOri").value)); drawAngle(); });
   $("exBtn").addEventListener("click", () => { D = example(); buildInputs(); update(); });
   $("clearBtn").addEventListener("click", () => {
@@ -490,6 +594,7 @@ canvas { display: block; width: 100%; height: 100%; }
   window.addEventListener("resize", drawAll);
   try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", drawAll); } catch (e) {}
   buildInputs(); update(); loadNames();
+  window.__calc = { model: () => model(), get D() { return D; } };
 })();
 </script>
 </body>

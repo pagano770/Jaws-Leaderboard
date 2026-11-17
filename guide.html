@@ -44,7 +44,7 @@ footer { margin-top: 40px; font-size: 14px; color: #555; }
     <tr><td><a href="./">Scoreboard</a></td><td>Live results for the projector. Ranks teams by strongest bite, by muscle orientation, and by calculated vs. measured force. Students can open it on their phones too.</td></tr>
     <tr><td><a href="./#station">Team station</a></td><td>One per team, on a laptop in Chrome or Edge. Connects to the load cell over USB and saves the peak force of every squeeze.</td></tr>
     <tr><td><a href="tools/jaw-calculator.html">Jaw force calculator</a></td><td>Calculates the predicted bite force for each orientation from the jaw measurements, with the uncertainty, the best muscle angle, and every step of the math shown. It can load a team's squeezes from the scoreboard and send the calculated forces back to it.</td></tr>
-    <tr><td><a href="tools/force-pressure.html">Force vs. pressure</a></td><td>Graphs muscle force against pressure at each contraction and fits F = P(c₁ − c₂ε). Paste in the output of the force/pressure logger.</td></tr>
+    <tr><td><a href="tools/muscle-characterization.html">Muscle characterization</a></td><td>Paste in the force/pressure logger output. It fits F = P(c₁ − c₂ε), predicts muscle force for any pressure and contraction, and saves the model so the jaw calculator can use it.</td></tr>
     <tr><td><a href="tools/muscle-pressure.html">Muscle pressure</a></td><td>Graphs pressure over time from the pressure logger and gives the peak pressure and leak rate.</td></tr>
   </table>
 
@@ -65,7 +65,7 @@ footer { margin-top: 40px; font-size: 14px; color: #555; }
     <li>Set the muscle length with the turnbuckle, measure how much it has shortened, and type <code>c</code> and the number in mm (for example <code>c12</code>).</li>
     <li>Push the syringe up through about six pressures and type <code>h</code> at each one. Then come back down through a few.</li>
     <li>Do the same at two or more other lengths. Type <code>n</code> before repeating a trial.</li>
-    <li>Paste everything from the Serial Monitor into the <a href="tools/force-pressure.html">force vs. pressure page</a> and enter the muscle's length, diameter and braid turns.</li>
+    <li>Paste everything from the Serial Monitor into the <a href="tools/muscle-characterization.html">muscle characterization page</a> and enter the muscle's length, diameter and braid turns.</li>
   </ol>
 
   <h2>Phase 1: pressure and leak test</h2>
