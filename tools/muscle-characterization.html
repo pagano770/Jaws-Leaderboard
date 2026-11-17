@@ -109,13 +109,14 @@ button.primary { background: var(--air); border-color: var(--air); color: var(--
 button.primary:hover { filter: brightness(1.1); color: var(--panel); }
 #predict .row { grid-template-columns: 1fr 170px; }
 </style>
+<link rel="stylesheet" href="lab.css">
 </head>
 <body>
 <div class="wrap">
   <a href="../guide.html" style="color:var(--muted);font-size:.9rem">← JAWS Project</a>
   <header>
     <h1>Muscle Characterization</h1>
-    <p>Turns your blocked-force tests into a formula for the muscle's force, F = P(c₁ − c₂ε) + c₀, then uses it to predict the force at any pressure and contraction. Data comes from the <a href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/arduino/muscle_force_pressure/muscle_force_pressure.ino" target="_blank" rel="noopener">force–pressure logger</a>; the steps are in the <a href="https://claude.ai/artifact/MfMrwkHXpQbDxQpVqbDntp" target="_blank" rel="noopener">build and test guide</a>. Your data and inputs are kept in this browser.</p>
+    <p>Fit F = P(c₁ − c₂ε) + c₀ to the force/pressure test, then use it to predict muscle force. Data comes from <a href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/arduino/muscle_force_pressure/muscle_force_pressure.ino" target="_blank" rel="noopener">muscle_force_pressure.ino</a>; test steps are in the <a href="https://claude.ai/artifact/MfMrwkHXpQbDxQpVqbDntp" target="_blank" rel="noopener">build and test guide</a>. Inputs are saved in this browser.</p>
   </header>
 
   <span class="tag" id="exampleTag">Showing made-up example data until you paste your own.</span>
@@ -235,7 +236,7 @@ button.primary:hover { filter: brightness(1.1); color: var(--panel); }
 
   // ---------- example (made-up) ----------
   function example() {
-    const L0 = 200, out = ["# example only — made-up numbers"];
+    const L0 = 200, out = ["# example only, made-up numbers"];
     let seed = 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280 - 0.5;
     [1, 2].forEach(tr => [0, 12, 24, 36].forEach(cmm => {
       const eps = cmm / L0, up = [5, 10, 15, 20, 25, 30], seq = up.concat([25, 15, 5]);
@@ -341,7 +342,7 @@ button.primary:hover { filter: brightness(1.1); color: var(--panel); }
     $("sC2").innerHTML = f(c2, 4) + "<small>N/kPa</small>";
     $("sC2s").textContent = nLevels > 1 ? "lost per kPa per unit of ε" : "needs 2+ contractions";
     $("sR2").textContent = f(R2, 3);
-    $("sR2s").innerHTML = "gate ≥ 0.90: <span class='gate " + (R2 >= 0.9 ? "ok'>✓ passes" : "no'>✗ below") + "</span>";
+    $("sR2s").innerHTML = R2 >= 0.9 ? "good (want 0.90 or more)" : "<span class='gate no'>low, want 0.90 or more</span>";
     $("sRM").innerHTML = f(rmse, 2) + "<small>N</small>";
     $("sRMs").textContent = pts.length + " readings";
     $("sEf").innerHTML = isFinite(eff) ? f(eff * 100, 0) + "<small>%</small>" : "–";
@@ -377,7 +378,7 @@ button.primary:hover { filter: brightness(1.1); color: var(--panel); }
       "<td class='num'>" + f(L.cmm / L0 * 100, 1) + "%</td><td class='num'>" + L.lp.length + "</td><td class='num'>" + L.trials.length + "</td>" +
       "<td class='num'>" + f(L.maxF, 2) + "</td><td class='num'>" + (L.line ? f(L.line[0], 4) : "–") + "</td>" +
       "<td class='num'>" + f(c1 - c2 * L.cmm / L0, 4) + "</td>" +
-      "<td class='num'>" + (isFinite(L.cv) ? f(L.cv, 1) + "% <span class='gate " + (L.cv <= 10 ? "ok'>✓" : "no'>✗") + "</span>" : "1 trial") + "</td>" +
+      "<td class='num'>" + (isFinite(L.cv) ? (L.cv <= 10 ? f(L.cv, 1) + "%" : "<span class='gate no'>" + f(L.cv, 1) + "%</span>") : "1 trial") + "</td>" +
       "<td class='num'>" + (isFinite(L.hys) ? f(L.hys, 1) + "%" : "no down steps") + "</td></tr>").join("");
 
     // worked calculation
