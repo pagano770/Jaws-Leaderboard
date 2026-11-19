@@ -180,6 +180,10 @@ code, kbd, pre, textarea, input, select, button { font-family: var(--font-body);
         <input type="checkbox" id="pct">
         <span>Show as % of peak<small>Every test starts at 100%, so tests filled to different pressures are easy to compare.</small></span>
       </label>
+      <label class="check" for="fitOn">
+        <input type="checkbox" id="fitOn" checked>
+        <span>Show line of best fit<small>A straight line through every reading after the peak. Its slope is the leak rate.</small></span>
+      </label>
       <label class="check" for="zero">
         <input type="checkbox" id="zero" checked>
         <span>Start the graph at zero<small>Subtracts the first 5 readings, so you see only what the syringe added.</small></span>
@@ -201,6 +205,7 @@ code, kbd, pre, textarea, input, select, button { font-family: var(--font-body);
 <script>
 (function () {
   const $ = id => document.getElementById(id);
+  const fitOn = $("fitOn");
   const raw = $("raw"), zero = $("zero"), alignMode = $("alignMode"), pct = $("pct"), interval = $("interval");
   const statusEl = $("status"), exampleTag = $("exampleTag"), canvas = $("chart");
   const LEAD = 1.0;          // seconds of rest kept before the push when lining up at the push
@@ -216,7 +221,7 @@ code, kbd, pre, textarea, input, select, button { font-family: var(--font-body);
       let p = 0;
       const up = t - onset;
       if (up > 0 && up < 12) p = peak * (1 - Math.exp(-up * 0.55)) / (1 - Math.exp(-12 * 0.55));
-      if (up >= 12) p = peak * Math.exp(-(up - 12) * 1.6);
+      if (up >= 12) p = peak * Math.exp(-(up - 12) * 0.035);
       p += Math.sin(i * 1.7 + seed) * 0.03;
       vals.push(Math.max(p, -0.01).toFixed(2));
     }
@@ -291,6 +296,20 @@ code, kbd, pre, textarea, input, select, button { font-family: var(--font-body);
     const pts = test.filter(p => p[0] >= t - 1e-9 && p[0] <= t + w + 1e-9);
     return pts.length ? pts.reduce((a, p) => a + p[1], 0) / pts.length : valueAt(test, t);
   }
+  // least-squares straight line y = m·x + b through points [[x, y], …], with R²
+  function linfit(pts) {
+    const n = pts.length;
+    if (n < 2) return null;
+    let sx = 0, sy = 0;
+    pts.forEach(p => { sx += p[0]; sy += p[1]; });
+    const mx = sx / n, my = sy / n;
+    let sxx = 0, sxy = 0, syy = 0;
+    pts.forEach(p => { const dx = p[0] - mx, dy = p[1] - my; sxx += dx * dx; sxy += dx * dy; syy += dy * dy; });
+    if (sxx === 0) return null;
+    const m = sxy / sxx, b = my - m * mx;
+    const r2 = syy > 0 ? (sxy * sxy) / (sxx * syy) : 1;
+    return { m, b, r2, n, x0: pts[0][0], x1: pts[n - 1][0] };
+  }
   function mean(a) { return a.reduce((x, y) => x + y, 0) / a.length; }
   function sd(a) {
     if (a.length < 2) return 0;
@@ -333,7 +352,7 @@ code, kbd, pre, textarea, input, select, button { font-family: var(--font-body);
     // (always calculated from each test's own peak, whatever the graph is lined up by)
     const fromPeak = tests.map(t => lineUp(t, "peak").filter(p => p[0] >= -1e-9));
     const window = Math.min(...fromPeak.map(t => t[t.length - 1][0]));
-    const lost = [], rate = [], startArr = [], endArr = [];
+    const lost = [], rate = [], startArr = [], endArr = [], fits = [], fitRate = [], fitR2 = [];
     const endW = Math.min(1, window / 4);
     fromPeak.forEach(t => {
       const startP = smoothAt(t, 0, 0.5);
@@ -342,6 +361,10 @@ code, kbd, pre, textarea, input, select, button { font-family: var(--font-body);
       startArr.push(startP); endArr.push(endP);
       lost.push(d);
       rate.push(window > 0 ? d / window : 0);
+      const f = linfit(t.filter(p => p[0] <= window + 1e-9));
+      fits.push(f);
+      fitRate.push(f ? -f.m : 0);
+      fitR2.push(f ? f.r2 : 0);
     });
 
     // values to draw: PSI or % of each test's peak
@@ -362,21 +385,22 @@ code, kbd, pre, textarea, input, select, button { font-family: var(--font-body);
       band = { lo, hi };
     }
     view = { main, faint: n > 1 ? shown : [], band, n, mode, peak: mode === "peak" ? main.reduce((a, p) => Math.abs(p[0]) < Math.abs(a[0]) ? p : a) : peakOf(main) };
+    view.fit = linfit(main.filter(p => p[0] >= view.peak[0] - 1e-9 && p[0] <= view.peak[0] + window + 1e-9));
 
     // stat tiles
     setStat("A", n > 1 ? "Average peak (± SD)" : "Peak pressure", pm(pv, 2, "PSI", n));
     setStat("B", "Pressure lost in " + fmt(window, 0) + " s", pm(lost, 2, "PSI", n));
-    setStat("C", "Leak rate", pm(rate, 3, "PSI/s", n));
+    setStat("C", "Leak rate (best fit)", pm(fitRate, 3, "PSI/s", n) + "<small> · R² " + fmt(mean(fitR2), 3) + "</small>");
     const pctLost = lost.map((d, i) => pv[i] > 0.05 ? d / pv[i] * 100 : 0);
     setStat("D", "Pressure lost", pm(pctLost, 1, "% of peak", n));
 
     // table
-    $("testsHead").innerHTML = "<tr><th>Test</th><th>Peak (PSI)</th><th>Lost in " + fmt(window, 0) + " s (PSI)</th><th>Leak rate (PSI/s)</th></tr>";
+    $("testsHead").innerHTML = "<tr><th>Test</th><th>Peak (PSI)</th><th>Lost in " + fmt(window, 0) + " s (PSI)</th><th>Leak rate, best fit (PSI/s)</th><th>R²</th><th>Leak rate, two points (PSI/s)</th></tr>";
     const rows = lined.map((t, i) =>
       "<tr><td>Test " + (i + 1) + "</td><td class=\"num\">" + fmt(pv[i], 2) + "</td>" +
-      "<td class=\"num\">" + fmt(lost[i], 2) + "</td><td class=\"num\">" + fmt(rate[i], 3) + "</td></tr>").join("");
+      "<td class=\"num\">" + fmt(lost[i], 2) + "</td><td class=\"num\">" + fmt(fitRate[i], 3) + "</td><td class=\"num\">" + fmt(fitR2[i], 3) + "</td><td class=\"num\">" + fmt(rate[i], 3) + "</td></tr>").join("");
     const avgRow = n > 1 ? "<tr class=\"avg\"><td>Average ± SD</td><td class=\"num\">" + fmt(mean(pv), 2) + " ± " + fmt(sd(pv), 2) + "</td>" +
-      "<td class=\"num\">" + fmt(mean(lost), 2) + " ± " + fmt(sd(lost), 2) + "</td><td class=\"num\">" + fmt(mean(rate), 3) + " ± " + fmt(sd(rate), 3) + "</td></tr>" : "";
+      "<td class=\"num\">" + fmt(mean(lost), 2) + " ± " + fmt(sd(lost), 2) + "</td><td class=\"num\">" + fmt(mean(fitRate), 3) + " ± " + fmt(sd(fitRate), 3) + "</td><td class=\"num\">" + fmt(mean(fitR2), 3) + "</td><td class=\"num\">" + fmt(mean(rate), 3) + " ± " + fmt(sd(rate), 3) + "</td></tr>" : "";
     $("testsBody").innerHTML = rows + avgRow;
     $("leakNote").hidden = false;
     $("testsPanel").hidden = false;
@@ -389,21 +413,23 @@ code, kbd, pre, textarea, input, select, button { font-family: var(--font-body);
         "<li><span>Start: average of the first 0.5 s after the peak</span><code>" + fmt(startArr[i], 2) + " PSI</code></li>" +
         "<li><span>End: average of the last " + fmt(endW, 1) + " s of the " + fmt(window, 1) + " s window</span><code>" + fmt(endArr[i], 2) + " PSI</code></li>" +
         "<li><span>Pressure lost = start − end</span><code>" + fmt(startArr[i], 2) + " − " + fmt(endArr[i], 2) + " = " + fmt(lost[i], 2) + " PSI</code></li>" +
-        "<li><span>Leak rate = lost ÷ time in seconds</span><code>" + fmt(lost[i], 2) + " ÷ " + fmt(window, 1) + " = " + fmt(rate[i], 3) + " PSI/s</code></li>" +
+        "<li><span>Two-point leak rate = lost ÷ time in seconds</span><code>" + fmt(lost[i], 2) + " ÷ " + fmt(window, 1) + " = " + fmt(rate[i], 3) + " PSI/s</code></li>" +
+        (fits[i] ? "<li><span>Line of best fit through all " + fits[i].n + " readings from the peak to " + fmt(window, 1) + " s (least squares)</span><code>P = " + fmt(fits[i].m, 4) + " × t + " + fmt(fits[i].b, 3) + " &nbsp; R² = " + fmt(fits[i].r2, 3) + "</code></li>" +
+        "<li><span>Leak rate from the fit = −slope</span><code>−(" + fmt(fits[i].m, 4) + ") = " + fmt(fitRate[i], 3) + " PSI/s</code></li>" : "") +
         "<li><span>Lost as % of peak = lost ÷ peak × 100</span><code>" + fmt(lost[i], 2) + " ÷ " + fmt(pv[i], 2) + " × 100 = " + fmt(pctL, 1) + "%</code></li>" +
         "</ol></div>";
     }).join("");
     let avg = "";
     if (n > 1) {
-      const m = mean(rate);
+      const m = mean(fitRate);
       avg = "<div class=\"calc-card calc-avg\"><h3>Average of " + n + " tests</h3><ol>" +
-        "<li><span>Average leak rate = add them up ÷ " + n + "</span><code>(" + rate.map(r => fmt(r, 3)).join(" + ") + ") ÷ " + n + " = " + fmt(m, 3) + " PSI/s</code></li>" +
-        "<li><span>Standard deviation = √( sum of (each − average)² ÷ (" + n + " − 1) )</span><code>√( (" + rate.map(r => "(" + fmt(r, 3) + " − " + fmt(m, 3) + ")²").join(" + ") + ") ÷ " + (n - 1) + " ) = " + fmt(sd(rate), 3) + " PSI/s</code></li>" +
-        "<li><span>Result</span><code>" + fmt(m, 3) + " ± " + fmt(sd(rate), 3) + " PSI/s</code></li>" +
+        "<li><span>Average best-fit leak rate = add them up ÷ " + n + "</span><code>(" + fitRate.map(r => fmt(r, 3)).join(" + ") + ") ÷ " + n + " = " + fmt(m, 3) + " PSI/s</code></li>" +
+        "<li><span>Standard deviation = √( sum of (each − average)² ÷ (" + n + " − 1) )</span><code>√( (" + fitRate.map(r => "(" + fmt(r, 3) + " − " + fmt(m, 3) + ")²").join(" + ") + ") ÷ " + (n - 1) + " ) = " + fmt(sd(fitRate), 3) + " PSI/s</code></li>" +
+        "<li><span>Result</span><code>" + fmt(m, 3) + " ± " + fmt(sd(fitRate), 3) + " PSI/s</code></li>" +
         "</ol></div>";
     }
     $("calcIntro").textContent = "Every test is measured over the same " + fmt(window, 1) +
-      " s after its own peak: the time from the peak to the end of the shortest test. Short averages at each end smooth out sensor noise.";
+      " s after its own peak: the time from the peak to the end of the shortest test. The line of best fit uses every reading in that window, so one noisy reading barely moves it; its slope is the leak rate. R² near 1 means the pressure drops at a steady rate; a low R² means the drop is curved (fast at first, then slower), and the leak rate is an average over the window. The two-point rate is shown for comparison.";
     $("calcBody").innerHTML = cards + avg;
     $("calcPanel").hidden = false;
 
@@ -510,6 +536,22 @@ code, kbd, pre, textarea, input, select, button { font-family: var(--font-body);
     path(view.main);
     ctx.strokeStyle = air; ctx.lineWidth = view.n > 1 ? 2.75 : 2.25; ctx.lineJoin = "round"; ctx.stroke();
 
+    // line of best fit over the leak window
+    if (fitOn.checked && view.fit) {
+      const f = view.fit;
+      ctx.save(); ctx.setLineDash([8, 5]); ctx.strokeStyle = muscle; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(X(f.x0), Y(f.m * f.x0 + f.b)); ctx.lineTo(X(f.x1), Y(f.m * f.x1 + f.b)); ctx.stroke(); ctx.restore();
+      const unit = isPct ? "%/s" : "PSI/s";
+      const txt = "Best fit: slope " + fmt(f.m, 3) + " " + unit + ", R² " + fmt(f.r2, 3);
+      ctx.font = "600 12px Helvetica, Arial, sans-serif"; ctx.fillStyle = ink;
+      const tw2 = ctx.measureText(txt).width;
+      const ty = T + ph - 24, tx = L + pw - tw2 - 10;
+      ctx.save(); ctx.setLineDash([8, 5]); ctx.strokeStyle = muscle; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(tx - 34, ty); ctx.lineTo(tx - 8, ty); ctx.stroke(); ctx.restore();
+      ctx.textAlign = "left"; ctx.textBaseline = "middle";
+      ctx.fillText(txt, tx, ty);
+    }
+
     // peak marker: in peak mode it sits at time 0, where every test is at its own peak
     const pk = view.peak, px = X(pk[0]), py = Y(pk[1]);
     ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI * 2);
@@ -543,7 +585,7 @@ code, kbd, pre, textarea, input, select, button { font-family: var(--font-body);
     if (isExample) { isExample = false; exampleTag.hidden = true; }
     scheduled();
   });
-  [zero, alignMode, pct].forEach(el => el.addEventListener("change", update));
+  [zero, alignMode, pct, fitOn].forEach(el => el.addEventListener("change", update));
   interval.addEventListener("input", scheduled);
   $("clearBtn").addEventListener("click", () => {
     raw.value = ""; isExample = false; exampleTag.hidden = true; update(); raw.focus();
