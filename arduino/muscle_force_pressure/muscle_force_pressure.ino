@@ -53,7 +53,8 @@ float contractionMm = 0.0;
 int trial = 1;
 bool live = false;
 bool recording = false;
-unsigned long lastSample = 0, recStart = 0;
+unsigned long lastSample = 0, recStart = 0, lastGoodForce = 0;
+int missed = 0;   // load cell readings skipped during this recording
 // running sums for the current 0.25 s recording window
 float wP = 0, wP2 = 0, wF = 0, wF2 = 0; int wN = 0;
 // summary of the current recording
@@ -68,7 +69,7 @@ float readPsiRaw() {
 }
 float readPsi() { return readPsiRaw() - pZeroPsi; }
 float readForceN() {
-  if (!scale.wait_ready_timeout(200)) return NAN;   // HX711 not answering: check 5V, GND, DT, SCK
+  if (!scale.wait_ready_timeout(300)) return NAN;   // HX711 not answering: check 5V, GND, DT, SCK
   return FORCE_SIGN * scale.get_units(1);
 }
 
@@ -106,9 +107,9 @@ void resetWindow() { wP = wP2 = wF = wF2 = 0; wN = 0; }
 
 void startRecording() {
   recording = true; live = false;
-  recPoints = 0; recMaxP = 0; recMaxF = 0;
+  recPoints = 0; recMaxP = 0; recMaxF = 0; missed = 0;
   resetWindow();
-  recStart = lastSample = millis();
+  recStart = lastSample = lastGoodForce = millis();
   Serial.print(F("# RECORDING trial ")); Serial.print(trial);
   Serial.print(F(" at ")); Serial.print(contractionMm, 1);
   Serial.println(F(" mm. Slowly raise the pressure, then slowly lower it. Type s to stop."));
@@ -121,13 +122,19 @@ void stopRecording(const __FlashStringHelper *why) {
   Serial.print(F(" points in ")); Serial.print((millis() - recStart) / 1000.0, 1);
   Serial.print(F(" s, max ")); Serial.print(recMaxP, 1);
   Serial.print(F(" psi, max ")); Serial.print(recMaxF, 1); Serial.println(F(" N"));
-  if (recPoints < 5) Serial.println(F("# Few points: was the muscle pressurized above 0.3 psi?"));
+  if (missed > 0) { Serial.print(F("# skipped ")); Serial.print(missed); Serial.println(F(" load cell readings (a few is fine; many = check the HX711 wires)")); }
+  if (recPoints < 5 && !why) Serial.println(F("# Few points: was the muscle pressurized above 0.3 psi?"));
 }
 
 // called every loop while recording: sample ~10x per window, print one averaged point per window
 void recordTick() {
   float p = readPsi(), f = readForceN();
-  if (isnan(f)) { stopRecording(F("load cell stopped answering")); return; }
+  if (isnan(f)) {
+    missed++;
+    if (millis() - lastGoodForce > 2000) stopRecording(F("no load cell reading for 2 s: check HX711 5V, GND, DT pin 3, SCK pin 2"));
+    return;   // skip this sample, keep recording
+  }
+  lastGoodForce = millis();
   wP += p; wP2 += p * p; wF += f; wF2 += f * f; wN++;
 
   if (f > FORCE_LIMIT_N) { stopRecording(F("FORCE LIMIT, let the pressure out now")); return; }
