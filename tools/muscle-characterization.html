@@ -108,6 +108,21 @@ a { color: var(--air); }
 button.primary { background: var(--air); border-color: var(--air); color: var(--panel); }
 button.primary:hover { filter: brightness(1.1); color: var(--panel); }
 #predict .row { grid-template-columns: 1fr 170px; }
+#run .runtop { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+#run .live { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 12px 0; }
+#run .live div { background: var(--bg); border: 1px solid var(--line); border-radius: 3px; padding: 10px 14px; }
+#run .live .k { font-size: .82rem; color: var(--muted); }
+#run .live .v { font-size: 2rem; font-variant-numeric: tabular-nums; color: var(--air); line-height: 1.2; }
+#run .live .v small { font-size: .9rem; color: var(--muted); margin-left: 4px; }
+#run .steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+#run .step { border: 1px solid var(--line); border-radius: 3px; padding: 12px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+#run .step b { color: var(--air); }
+#run .step p { margin: 0; font-size: .85rem; color: var(--muted); }
+#run .step .pair input { width: 90px; font: .9rem var(--font-body); padding: 6px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+#run button:disabled { opacity: .45; cursor: default; }
+#run button.rec { background: #b3261e; border-color: #b3261e; color: #fff; }
+#runMsg { margin-top: 10px; }
+@media (max-width: 820px) { #run .steps { grid-template-columns: minmax(0, 1fr); } }
 </style>
 </head>
 <body>
@@ -117,6 +132,38 @@ button.primary:hover { filter: brightness(1.1); color: var(--panel); }
     <h1>Muscle Characterization</h1>
     <p>Turns your blocked-force tests into a formula for the muscle's force, F = P(c₁ − c₂ε) + c₀, then uses it to predict the force at any pressure and contraction. Data comes from the <a href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/arduino/muscle_force_pressure/muscle_force_pressure.ino" target="_blank" rel="noopener">force–pressure logger</a>; the steps are in the <a href="https://claude.ai/artifact/MfMrwkHXpQbDxQpVqbDntp" target="_blank" rel="noopener">build and test guide</a>. Your data and inputs are kept in this browser.</p>
   </header>
+
+  <section class="panel" id="run">
+    <h2>0. Run the test</h2>
+    <div class="runtop">
+      <button type="button" class="primary" id="connectBtn">Connect Arduino</button>
+      <span class="status" id="connState">Plug in the Arduino running the force–pressure logger, close the Arduino IDE, then click Connect (Chrome or Edge).</span>
+    </div>
+    <div class="live">
+      <div><div class="k">Pressure</div><div class="v" id="livePsi">–<small>psi</small></div></div>
+      <div><div class="k">Force</div><div class="v" id="liveN">–<small>N</small></div></div>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <b>Calibrate (once)</b>
+        <p id="calInfo">Nothing hanging on the load cell, then click Start. Then hang a known mass and click the second button.</p>
+        <div class="pair"><input type="number" id="calMass" value="1000" min="1" step="1" aria-label="Calibration mass in grams"><span style="align-self:center">grams</span></div>
+        <div class="buttons"><button type="button" id="calStart" disabled>Start (nothing hanging)</button><button type="button" id="calDone" disabled>Mass is hanging</button></div>
+      </div>
+      <div class="step">
+        <b>Zero</b>
+        <p>Muscle hanging, deflated, turnbuckle snug, nothing pulling. Zero before each set of runs.</p>
+        <div class="buttons"><button type="button" id="zeroBtn" disabled>Zero</button></div>
+      </div>
+      <div class="step">
+        <b>Record a run</b>
+        <p>Set the turnbuckle, type how much the muscle is held short, click Start, slowly raise the pressure, slowly lower it, click Stop.</p>
+        <div class="pair"><input type="number" id="runMm" value="0" min="0" step="0.5" aria-label="Contraction in mm"><span style="align-self:center">mm contraction</span></div>
+        <div class="buttons"><button type="button" id="recBtn" disabled>Start recording</button><button type="button" id="undoBtn" disabled>Delete last run</button></div>
+      </div>
+    </div>
+    <div class="status" id="runMsg"></div>
+  </section>
 
   <span class="tag" id="exampleTag">Showing made-up example data until you paste your own.</span>
 
@@ -577,6 +624,133 @@ button.primary:hover { filter: brightness(1.1); color: var(--panel); }
     });
     cv.addEventListener("mouseleave", () => tip.hidden = true);
   }
+
+  // ---------- live Arduino control (Web Serial) ----------
+  const ser = { port: null, reader: null, writer: null, rec: false, runStart: null, runPts: 0, calStage: 0, lastLine: 0 };
+  const FACTOR_KEY = "jaws-lc-factor-v1";
+  const runMsg = (t, err) => { $("runMsg").className = "status" + (err ? " err" : ""); $("runMsg").textContent = t; };
+  function serSetUI() {
+    const on = !!ser.port;
+    $("connectBtn").textContent = on ? "Disconnect" : "Connect Arduino";
+    ["zeroBtn", "calStart"].forEach(id => $(id).disabled = !on || ser.rec);
+    $("calDone").disabled = !on || ser.rec || ser.calStage !== 1;
+    $("recBtn").disabled = !on;
+    $("recBtn").textContent = ser.rec ? "Stop recording" : "Start recording";
+    $("recBtn").classList.toggle("rec", ser.rec);
+    $("undoBtn").disabled = ser.rec || ser.runStart === null;
+    $("runMm").disabled = ser.rec;
+    if (!on) { $("livePsi").innerHTML = "–<small>psi</small>"; $("liveN").innerHTML = "–<small>N</small>"; }
+  }
+  async function serSend(cmd) { if (ser.writer) { try { await ser.writer.write(cmd + "\n"); } catch (e) { runMsg("Couldn't talk to the Arduino. Reconnect it.", true); } } }
+  function showLive(psi, n) {
+    if (isFinite(psi)) $("livePsi").innerHTML = psi.toFixed(2) + "<small>psi</small>";
+    $("liveN").innerHTML = (isFinite(n) ? n.toFixed(2) : "–") + "<small>N</small>";
+  }
+  function addStepLine(line) {
+    if (isExample) { $("raw").value = ""; isExample = false; $("exampleTag").hidden = true; }
+    const r = $("raw");
+    if (r.value && !r.value.endsWith("\n")) r.value += "\n";
+    r.value += line + "\n";
+    later();
+  }
+  function serLine(line) {
+    ser.lastLine = performance.now();
+    if (!line) return;
+    let m;
+    if ((m = line.match(/^LIVE,[^,]*,(-?[\d.]+),(.*)$/))) { showLive(+m[1], parseFloat(m[2])); return; }
+    if (/^STEP,/.test(line)) {
+      const f = line.split(",").map(Number);
+      if (ser.calStage === 2) { finishCal(f[4]); return; }
+      showLive(f[3], f[4]);
+      if (ser.rec) { addStepLine(line); ser.runPts++; runMsg("Recording " + $("runMm").value + " mm: " + ser.runPts + " points. Slowly raise the pressure, then lower it."); }
+      return;
+    }
+    if (/^# zeroed/.test(line)) {
+      if (!ser.ready) { ser.ready = true; const k = parseFloat(localStorage.getItem(FACTOR_KEY)); if (k) serSend("f" + k); serSend("l1"); }
+      if (ser.calStage === 1) runMsg("Zeroed with nothing hanging. Now hang " + $("calMass").value + " g from the rod end and click \u201cMass is hanging\u201d.");
+      else runMsg("Zeroed.");
+      return;
+    }
+    if ((m = line.match(/^# STOPPED(?: \((.*)\))?:/))) {
+      const wasRec = ser.rec; ser.rec = false; serSetUI(); serSend("l1");
+      if (m[1]) runMsg("Stopped: " + m[1] + ". " + ser.runPts + " points kept.", true);
+      else if (wasRec) runMsg("Run saved: " + ser.runPts + " points at " + $("runMm").value + " mm. Change the turnbuckle and contraction, then record the next run.");
+      return;
+    }
+    if (/^# ERROR/.test(line)) { runMsg(line.replace(/^# /, ""), true); return; }
+  }
+  async function serConnect() {
+    if (ser.port) { try { await ser.reader.cancel(); } catch (e) {} return; }
+    if (!("serial" in navigator)) { runMsg("This browser can't talk to USB. Open this page in Chrome or Edge on a laptop.", true); return; }
+    try { ser.port = await navigator.serial.requestPort(); await ser.port.open({ baudRate: 115200 }); }
+    catch (e) {
+      ser.port = null;
+      if (e.name === "NotFoundError") return;
+      runMsg(e.name === "InvalidStateError" ? "The Arduino is already open in another tab." : "The Arduino is busy. Close the Arduino IDE and Serial Monitor, unplug and replug the USB, then try again.", true);
+      return;
+    }
+    const dec = new TextDecoderStream(); ser.readClosed = ser.port.readable.pipeTo(dec.writable).catch(() => {});
+    ser.reader = dec.readable.getReader();
+    const enc = new TextEncoderStream(); ser.writeClosed = enc.readable.pipeTo(ser.port.writable).catch(() => {});
+    ser.writer = enc.writable.getWriter();
+    ser.ready = false; ser.lastLine = performance.now();
+    $("connState").textContent = "Connected. Waiting for the Arduino…";
+    serSetUI();
+    setTimeout(() => { if (ser.port && !ser.ready) { serSend("t"); } }, 3500);
+    clearInterval(ser.watch);
+    ser.watch = setInterval(() => {
+      if (!ser.port) return clearInterval(ser.watch);
+      const quiet = performance.now() - ser.lastLine > 6000;
+      $("connState").textContent = quiet
+        ? "Connected, but nothing is coming from the Arduino. Is the force\u2013pressure logger uploaded? Check the HX711 wires (5V, GND, DT pin 3, SCK pin 2)."
+        : "Connected" + (localStorage.getItem(FACTOR_KEY) ? " · calibrated" : " · not calibrated yet");
+    }, 1000);
+    let buf = "";
+    try {
+      while (true) {
+        const { value, done } = await ser.reader.read();
+        if (done) break;
+        buf += value; let i;
+        while ((i = buf.indexOf("\n")) >= 0) { serLine(buf.slice(0, i).trim()); buf = buf.slice(i + 1); }
+      }
+    } catch (e) { runMsg("Arduino disconnected.", true); }
+    try { ser.reader.releaseLock(); } catch (e) {}
+    try { await ser.writer.close(); } catch (e) {}
+    try { await ser.readClosed; await ser.writeClosed; } catch (e) {}
+    try { await ser.port.close(); } catch (e) {}
+    ser.port = ser.reader = ser.writer = null; ser.rec = false; ser.calStage = 0; clearInterval(ser.watch);
+    $("connState").textContent = "Not connected.";
+    serSetUI();
+  }
+  function finishCal(counts) {
+    const g = parseFloat($("calMass").value), want = g / 1000 * 9.80665;
+    ser.calStage = 0;
+    if (!(g > 0) || !isFinite(counts) || Math.abs(counts) < 1e-6) { runMsg("Calibration didn't get a reading. Check the mass is hanging, then try again.", true); serSend("l1"); serSetUI(); return; }
+    const k = counts / want;
+    try { localStorage.setItem(FACTOR_KEY, String(k)); } catch (e) {}
+    serSend("f" + k.toFixed(3)); serSend("l1");
+    $("calInfo").textContent = "Calibrated with " + g + " g (factor " + k.toFixed(1) + "). Saved in this browser, so you only do this once.";
+    runMsg("Calibrated. The " + g + " g mass should now read about " + want.toFixed(2) + " N. Take it off, then Zero.");
+    serSetUI();
+  }
+  $("connectBtn").addEventListener("click", serConnect);
+  $("zeroBtn").addEventListener("click", () => { runMsg("Zeroing… keep everything still."); serSend("t"); });
+  $("calStart").addEventListener("click", () => { ser.calStage = 1; serSetUI(); runMsg("Zeroing with nothing hanging…"); serSend("f1"); serSend("t"); });
+  $("calDone").addEventListener("click", () => { ser.calStage = 2; serSetUI(); runMsg("Reading the mass… hold still for 3 seconds."); serSend("l0"); serSend("h"); });
+  $("recBtn").addEventListener("click", () => {
+    if (ser.rec) { serSend("s"); return; }
+    const mm = parseFloat($("runMm").value);
+    if (!(mm >= 0)) { runMsg("Type the contraction in mm first (0 = full length).", true); return; }
+    ser.runStart = isExample ? 0 : $("raw").value.length; ser.runPts = 0; ser.rec = true; serSetUI();
+    runMsg("Recording " + mm + " mm… slowly raise the pressure.");
+    serSend("c" + mm); serSend("s");
+  });
+  $("undoBtn").addEventListener("click", () => {
+    if (ser.runStart === null) return;
+    $("raw").value = $("raw").value.slice(0, ser.runStart); ser.runStart = null; serSetUI(); update();
+    runMsg("Deleted the last run. Record it again when ready.");
+  });
+  if ("serial" in navigator) navigator.serial.addEventListener("disconnect", e => { if (e.target === ser.port) runMsg("Arduino unplugged.", true); });
 
   // ---------- wiring ----------
   let timer; const later = () => { clearTimeout(timer); timer = setTimeout(update, 120); };
