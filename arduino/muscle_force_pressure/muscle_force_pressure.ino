@@ -1,7 +1,10 @@
 // JAWS Phase 1 — McKibben muscle force vs. pressure characterization
 // Reads the 0–80 psi pressure sensor (A0) and the bar load cell (HX711) together.
 //
-// HOW TO RUN A TEST (Serial Monitor: 115200 baud, line ending "Newline")
+// EASIEST: open the Muscle Characterization page in Chrome and click "Connect Arduino".
+// The page has buttons for everything below (close the Arduino IDE Serial Monitor first).
+//
+// OR BY HAND (Serial Monitor: 115200 baud, line ending "Newline")
 //   1. Muscle hanging, deflated, turnbuckle snug.  Type  t   to zero everything.
 //   2. Set the turnbuckle to the contraction you want, then type it in mm:  c10
 //   3. Type  s  to START. Slowly open the compressor/regulator up to your max
@@ -14,7 +17,8 @@
 // Other commands:
 //   n        new trial number (for repeats of the whole set)
 //   h        one manual point: hold still, averages 2 s, prints one STEP line
-//   l        live readings on/off (for checking, not recorded)
+//   l        live readings on/off (l1 = on, l0 = off)
+//   f123.4   set the load cell factor (counts per newton) without re-uploading
 //   ?        print settings
 //
 // Each STEP line: STEP,trial,contraction_mm,pressure_psi,force_N,pressure_sd_psi,force_sd_N
@@ -187,9 +191,14 @@ void handle(String cmd) {
   else if (c == 'h') hold();
   else if (c == 'n') { trial++; printSettings(); }
   else if (c == 'c') { contractionMm = cmd.substring(1).toFloat(); printSettings(); }
-  else if (c == 'l') { live = !live; printSettings(); }
+  else if (c == 'l') { live = cmd.length() > 1 ? cmd.charAt(1) == '1' : !live; printSettings(); }
+  else if (c == 'f') {
+    float k = cmd.substring(1).toFloat();
+    if (k != 0) { LC_FACTOR = k; scale.set_scale(LC_FACTOR); }
+    printSettings();
+  }
   else if (c == '?') printSettings();
-  else Serial.println(F("# commands: t (zero)  c<mm>  s (start/stop)  n  h  l  ?"));
+  else Serial.println(F("# commands: t (zero)  c<mm>  s (start/stop)  n  h  l  f<factor>  ?"));
 }
 
 void setup() {
