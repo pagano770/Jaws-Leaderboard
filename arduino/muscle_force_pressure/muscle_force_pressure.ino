@@ -141,7 +141,7 @@ void recordTick() {
   lastGoodForce = millis();
   wP += p; wP2 += p * p; wF += f; wF2 += f * f; wN++;
 
-  if (f > FORCE_LIMIT_N) { stopRecording(F("FORCE LIMIT, let the pressure out now")); return; }
+  if (fabs(f) > FORCE_LIMIT_N) { stopRecording(F("FORCE LIMIT, let the pressure out now")); return; }
   if (p > PSI_LIMIT)     { stopRecording(F("PRESSURE LIMIT, let the pressure out now")); return; }
 
   if (millis() - lastSample >= REC_MS) {
