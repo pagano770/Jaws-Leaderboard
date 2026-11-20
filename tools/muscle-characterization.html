@@ -666,7 +666,7 @@ button.primary:hover { filter: brightness(1.1); color: var(--panel); }
       return;
     }
     if (/^# zeroed/.test(line)) {
-      if (!ser.ready) { ser.ready = true; const k = parseFloat(localStorage.getItem(FACTOR_KEY)); if (k) serSend("f" + k); serSend("l1"); }
+      if (!ser.ready) { ser.ready = true; const k = parseFloat(localStorage.getItem(FACTOR_KEY)); if (Math.abs(k) >= 100) serSend("f" + k); else if (k) { try { localStorage.removeItem(FACTOR_KEY); } catch (e) {} runMsg("The saved calibration was bad, so it was cleared. Please calibrate again.", true); } serSend("l1"); }
       if (ser.calStage === 1) runMsg("Zeroed with nothing hanging. Now hang " + $("calMass").value + " g from the rod end and click \u201cMass is hanging\u201d.");
       else runMsg("Zeroed.");
       return;
@@ -703,7 +703,7 @@ button.primary:hover { filter: brightness(1.1); color: var(--panel); }
       const quiet = performance.now() - ser.lastLine > 6000;
       $("connState").textContent = quiet
         ? "Connected, but nothing is coming from the Arduino. Is the force\u2013pressure logger uploaded? Check the HX711 wires (5V, GND, DT pin 3, SCK pin 2)."
-        : "Connected" + (localStorage.getItem(FACTOR_KEY) ? " · calibrated" : " · not calibrated yet");
+        : "Connected" + (Math.abs(parseFloat(localStorage.getItem(FACTOR_KEY))) >= 100 ? " · calibrated" : " · not calibrated yet");
     }, 1000);
     let buf = "";
     try {
@@ -727,6 +727,7 @@ button.primary:hover { filter: brightness(1.1); color: var(--panel); }
     ser.calStage = 0;
     if (!(g > 0) || !isFinite(counts) || Math.abs(counts) < 1e-6) { runMsg("Calibration didn't get a reading. Check the mass is hanging, then try again.", true); serSend("l1"); serSetUI(); return; }
     const k = counts / want;
+    if (Math.abs(k) < 100) { runMsg("Calibration didn't work: the reading barely changed when the mass was added (factor " + k.toFixed(1) + "). Use a heavier mass (1000 g is good), click Start with nothing hanging, hang the mass, wait until it stops swinging, then click Mass is hanging.", true); serSend("l1"); serSetUI(); return; }
     try { localStorage.setItem(FACTOR_KEY, String(k)); } catch (e) {}
     serSend("f" + k.toFixed(3)); serSend("l1");
     $("calInfo").textContent = "Calibrated with " + g + " g (factor " + k.toFixed(1) + "). Saved in this browser, so you only do this once.";
