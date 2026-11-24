@@ -1,4 +1,4 @@
-// JAWS Phase 1 — McKibben muscle force vs. pressure characterization
+// JAWS Stage 1: McKibben muscle force vs. pressure characterization
 // Reads the 0–80 psi pressure sensor (A0) and the bar load cell (HX711) together.
 //
 // EASIEST: open the Muscle Characterization page in Chrome and click "Connect Arduino".

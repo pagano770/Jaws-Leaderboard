@@ -170,7 +170,17 @@ canvas { display: block; width: 100%; height: 100%; }
   </section>
 
   <section class="panel">
-    <h2>4. Leaderboard</h2>
+    <h2>4. Pressure for a target force <small style="font-weight:normal;color:var(--muted)">(Challenge 1)</small></h2>
+    <p class="hint">Works the model backward: the bite force you were given, at your orientation, turned into the pressure you need, with a range from your measurement uncertainties. Needs the measured muscle model.</p>
+    <div class="lb">
+      <label>Orientation<select id="tOri"></select></label>
+      <label>Target force at the load cell (N)<input type="number" id="tF" value="15" step="0.5" min="0"></label>
+    </div>
+    <div class="math" id="tOut"></div>
+  </section>
+
+  <section class="panel">
+    <h2>5. Leaderboard</h2>
     <p class="hint">Load your team's squeezes from the scoreboard into the Measured column (the 5 most recent for each orientation), or send your calculated forces to the scoreboard's "Calculated vs. measured" board.</p>
     <div class="lb">
       <label>Class<input type="text" id="lbClass" value="main"></label>
@@ -266,7 +276,7 @@ canvas { display: block; width: 100%; height: 100%; }
   // measured muscle model: F_Mi = P(c1 - c2 x_i / L0) + c0, P in kPa
   function measuredModel() {
     const c = D.mode === 2 ? 0.5 : 1, md = D.mdl;
-    const sig = [D.sT * Math.PI / 180, D.sA, D.sA, D.sA, D.sL, D.sL, D.sP * KPA];
+    const sig = [D.sT * Math.PI / 180, D.sA, D.sA, D.sA, D.sL, D.sL, D.sP];
     const rows = D.geom.map((g, i) => {
       const [thD, RMX, RMY, RLC, , , x1, x2] = g, th = thD * Math.PI / 180, psi = D.press[i], P = psi * KPA;
       const R = { i, label: LABELS[i], valid: !!md && [thD, RMX, RMY, RLC, x1, x2, psi].every(v => isFinite(v)) && RLC > 0 };
@@ -277,7 +287,7 @@ canvas { display: block; width: 100%; height: 100%; }
       R.FM1 = P * (md.c1 - md.c2 * R.e1) + md.c0; R.FM2 = P * (md.c1 - md.c2 * R.e2) + md.c0; R.FM = c * (R.FM1 + R.FM2);
       R.arm = RMX * Math.cos(th) + RMY * Math.sin(th);
       R.tau = R.FM * R.arm; R.F = R.tau / RLC;
-      const dx = c * (-md.c2 * P / md.L0) * R.arm / RLC, dP = c * ((md.c1 - md.c2 * R.e1) + (md.c1 - md.c2 * R.e2)) * R.arm / RLC;
+      const dx = c * (-md.c2 * P / md.L0) * R.arm / RLC, dP = c * ((md.c1 - md.c2 * R.e1) + (md.c1 - md.c2 * R.e2)) * R.arm / RLC * KPA; // N per psi
       R.dF = [R.FM * (RMY * Math.cos(th) - RMX * Math.sin(th)) / RLC, R.FM * Math.cos(th) / RLC, R.FM * Math.sin(th) / RLC, -R.F / RLC, dx, dx, dP];
       R.contrib = R.dF.map((d, q) => (d * sig[q]) ** 2);
       R.sigF = Math.sqrt(R.contrib.reduce((s, x) => s + x, 0));
@@ -288,8 +298,8 @@ canvas { display: block; width: 100%; height: 100%; }
       return R;
     });
     const ratios = rows.filter(R => isFinite(R.ratio)).map(R => R.ratio);
-    return { rows, sig, c, measured: true, qn: QN_M, units: ["N/rad", "N/mm", "N/mm", "N/mm", "N/mm", "N/mm", "N/kPa"],
-      sigLabels: sig.map((v, q) => q === 0 ? f(v, 3) + " rad" : q === 6 ? f(v, 1) + " kPa" : f(v, 1) + " mm"),
+    return { rows, sig, c, measured: true, qn: QN_M, units: ["N/rad", "N/mm", "N/mm", "N/mm", "N/mm", "N/mm", "N/psi"],
+      sigLabels: sig.map((v, q) => q === 0 ? f(v, 3) + " rad" : q === 6 ? f(v, 1) + " psi" : f(v, 1) + " mm"),
       U: [], k: NaN, aFit: NaN, R2: NaN, eta: ratios.length ? mean(ratios) : NaN, etaN: ratios.length };
   }
   function classModel() {
@@ -370,6 +380,9 @@ canvas { display: block; width: 100%; height: 100%; }
     const sel = $("mathOri"), cur = sel.value || "A";
     sel.innerHTML = LABELS.map(L => "<option" + (L === cur ? " selected" : "") + ">" + L + "</option>").join("");
     renderMath(LABELS.indexOf(sel.value));
+    const ts = $("tOri"), tcur = ts.value || "A";
+    ts.innerHTML = LABELS.map(L => "<option" + (L === tcur ? " selected" : "") + ">" + L + "</option>").join("");
+    target();
     $("exNote").hidden = !D.isExample;
     drawAll();
   }
@@ -438,6 +451,42 @@ canvas { display: block; width: 100%; height: 100%; }
     s.push(ls + "</section>");
     el.innerHTML = s.join("");
   }
+
+  // ---------- challenge 1: pressure for a target force ----------
+  // F_LC = c[P(2c1 - c2(e1 + e2)) + 2c0] arm / R_LC, solved for P
+  function target() {
+    const out = $("tOut"), i = LABELS.indexOf($("tOri").value), tF = parseFloat($("tF").value);
+    if (D.mm !== "measured" || !D.mdl) { out.innerHTML = "<p>Set Muscle model to <b>Measured muscle model</b> in section 1 and load your model from the Muscle Characterization page.</p>"; return; }
+    const [thD, RMX, RMY, RLC, , , x1, x2] = D.geom[i], md = D.mdl, c = D.mode === 2 ? 0.5 : 1;
+    if (![thD, RMX, RMY, RLC, x1, x2].every(v => isFinite(v)) || RLC <= 0) { out.innerHTML = "<p>Fill in θ, R_MX, R_MY, R_LC, x1 and x2 for orientation " + LABELS[i] + " in section 1. You don't need a pressure for this one.</p>"; return; }
+    if (!(tF > 0)) { out.innerHTML = "<p>Enter the target force.</p>"; return; }
+    const th = thD * Math.PI / 180, cs = Math.cos(th), sn = Math.sin(th);
+    const arm = RMX * cs + RMY * sn, e1 = x1 / md.L0, e2 = x2 / md.L0;
+    const slope = (md.c1 - md.c2 * e1) + (md.c1 - md.c2 * e2);
+    if (!(arm > 0) || !(slope > 0)) { out.innerHTML = "<p>With this geometry the muscles can't push the jaw closed (lever arm or muscle slope is zero or negative). Check θ, R_MX, R_MY, x1 and x2.</p>"; return; }
+    const FM = tF * RLC / arm, P = (FM / c - 2 * md.c0) / slope, psi = P / KPA;
+    if (!(P > 0)) { out.innerHTML = "<p>Your muscle model gives this force with no added pressure, so try a bigger target.</p>"; return; }
+    // uncertainty from the geometry at that force, turned into a pressure range, plus the gauge itself
+    const dx = c * (-md.c2 * P / md.L0) * arm / RLC;
+    const dF = [FM * (RMY * cs - RMX * sn) / RLC, FM * cs / RLC, FM * sn / RLC, -tF / RLC, dx, dx];
+    const sg = [D.sT * Math.PI / 180, D.sA, D.sA, D.sA, D.sL, D.sL];
+    const sF = Math.sqrt(dF.reduce((s, d, q) => s + (d * sg[q]) ** 2, 0));
+    const dFdP = c * slope * arm / RLC * KPA;
+    const sPsi = Math.sqrt((sF / dFdP) ** 2 + D.sP ** 2);
+    const maxPsi = md.maxPsi;
+    out.innerHTML =
+      "<section><h3>1. Muscle force needed</h3><p class='eq'>arm = R_MX cos θ + R_MY sin θ = " + f(RMX, 1) + " cos " + f(thD, 1) + "° + " + f(RMY, 1) + " sin " + f(thD, 1) + "° = " + f(arm, 2) + " mm</p>" +
+      "<p class='eq'>F_M = F_LC × R_LC ÷ arm = " + f(tF, 2) + " × " + f(RLC, 1) + " ÷ " + f(arm, 2) + " = " + f(FM, 2) + " N" + (c === 1 ? " (both muscles together)" : " (average of both muscles)") + "</p></section>" +
+      "<section><h3>2. Solve the muscle model for P</h3><p class='eq'>" + (c === 1 ? "F_M" : "2F_M") + " = P[(c₁ − c₂ε1) + (c₁ − c₂ε2)] + 2c₀, with ε1 = " + f(e1, 4) + " and ε2 = " + f(e2, 4) + "</p>" +
+      "<p class='eq'>P = (" + f(FM / c, 2) + " − 2 × (" + f(md.c0, 2) + ")) ÷ " + f(slope, 4) + " = " + f(P, 1) + " kPa ÷ 6.895 = <b>" + f(psi, 1) + " psi</b></p></section>" +
+      "<section><h3>3. Pressure range</h3><p class='eq'>σ_F from θ, R_MX, R_MY, R_LC, x1, x2 at this force = " + f(sF, 2) + " N</p>" +
+      "<p class='eq'>∂F/∂P = " + f(dFdP, 3) + " N/psi → σ_P = √( (σ_F ÷ ∂F/∂P)² + σ_gauge² ) = √( (" + f(sF, 2) + " ÷ " + f(dFdP, 3) + ")² + " + f(D.sP, 1) + "² ) = " + f(sPsi, 2) + " psi</p>" +
+      "<p class='eq'>Set the pressure to <b>" + f(psi, 1) + " psi</b>. About 95% range: " + f(psi - 2 * sPsi, 1) + " to " + f(psi + 2 * sPsi, 1) + " psi.</p>" +
+      (isFinite(maxPsi) && psi > maxPsi * 1.05 ? "<p class='bad'>That is above the highest pressure in your characterization (" + f(maxPsi, 1) + " psi), so the model is being stretched past your data.</p>" : "") +
+      (md.example ? "<p class='bad'>This uses the made-up example muscle model.</p>" : "") + "</section>";
+  }
+  $("tOri").addEventListener("change", target);
+  $("tF").addEventListener("input", target);
 
   // ---------- charts ----------
   const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();

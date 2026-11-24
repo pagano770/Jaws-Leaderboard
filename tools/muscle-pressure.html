@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Muscle Pressure Graph</title>
 <style>
-/* Layout: lab-notebook tool — graph first, readings below it, paste box last. Rowan brown and gold. */
 :root {
   --bg: #f6f1e9;
   --panel: #ffffff;
@@ -192,6 +191,11 @@ code, kbd, pre, textarea, input, select, button { font-family: var(--font-body);
         <label for="interval">Seconds between readings</label>
         <input type="number" id="interval" value="0.1" min="0.01" step="0.05">
         <small class="hint" style="margin:0">Only used for data without times. DATA lines carry their own.</small>
+      </div>
+      <div class="field">
+        <label for="needP">Pressure your jaw needs (psi)</label>
+        <input type="number" id="needP" min="0" step="0.1" placeholder="optional">
+        <small class="hint" style="margin:0">Gives how long the muscle can hold a bite. Get it from the target panel in the jaw calculator.</small>
       </div>
       <div class="buttons">
         <button id="clearBtn" type="button">Clear</button>
@@ -430,7 +434,19 @@ code, kbd, pre, textarea, input, select, button { font-family: var(--font-body);
     }
     $("calcIntro").textContent = "Every test is measured over the same " + fmt(window, 1) +
       " s after its own peak: the time from the peak to the end of the shortest test. The line of best fit uses every reading in that window, so one noisy reading barely moves it; its slope is the leak rate. R² near 1 means the pressure drops at a steady rate; a low R² means the drop is curved (fast at first, then slower), and the leak rate is an average over the window. The two-point rate is shown for comparison.";
-    $("calcBody").innerHTML = cards + avg;
+    // hold time: how long until the leak drops below the pressure the jaw needs
+    let hold = "";
+    const need = parseFloat($("needP").value), p0 = mean(startArr), r = mean(fitRate);
+    if (need > 0) {
+      hold = "<div class=\"calc-card calc-avg\"><h3>Hold time</h3><ol>" +
+        "<li><span>Start pressure (average after the peak)</span><code>" + fmt(p0, 2) + " PSI</code></li>" +
+        "<li><span>Leak rate (best fit" + (n > 1 ? ", average" : "") + ")</span><code>" + fmt(r, 3) + " PSI/s</code></li>" +
+        (need >= p0 ? "<li><span>The muscle never got up to " + fmt(need, 2) + " PSI in these tests, so there is nothing to hold.</span><code>Fill it higher and test again.</code></li>"
+          : r > 0 ? "<li><span>Hold time = (start − needed) ÷ leak rate</span><code>(" + fmt(p0, 2) + " − " + fmt(need, 2) + ") ÷ " + fmt(r, 3) + " = " + fmt((p0 - need) / r, 1) + " s</code></li>"
+          : "<li><span>No measurable leak in this window</span><code>it holds longer than the " + fmt(window, 0) + " s recording</code></li>") +
+        "</ol></div>";
+    }
+    $("calcBody").innerHTML = cards + avg + hold;
     $("calcPanel").hidden = false;
 
     statusEl.className = "status";
@@ -586,6 +602,7 @@ code, kbd, pre, textarea, input, select, button { font-family: var(--font-body);
     scheduled();
   });
   [zero, alignMode, pct, fitOn].forEach(el => el.addEventListener("change", update));
+  $("needP").addEventListener("input", update);
   interval.addEventListener("input", scheduled);
   $("clearBtn").addEventListener("click", () => {
     raw.value = ""; isExample = false; exampleTag.hidden = true; update(); raw.focus();
