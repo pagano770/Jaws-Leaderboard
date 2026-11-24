@@ -27,7 +27,6 @@ li { margin-bottom: 4px; }
 code { font-family: inherit; background: #f2f2f2; padding: 0 4px; }
 .small { font-size: 14px; color: #555; }
 footer { margin-top: 40px; font-size: 14px; color: #555; }
-.plan td:nth-child(2) { white-space: nowrap; }
 @media (max-width: 560px) { td:first-child { white-space: normal; } td a { overflow-wrap: anywhere; } th, td { padding-right: 8px; } }
 </style>
 </head>
@@ -37,42 +36,19 @@ footer { margin-top: 40px; font-size: 14px; color: #555; }
   <p class="sub">McKibben muscle jaw, Soft Robotics Clinic, Rowan University. Built Fall 2026 for SECII, Spring 2027.</p>
   <hr>
 
-  <p>This page has the links and files for our jaw project. Students use these all semester, and the plan below shows which page goes with which week. Everything runs in a web browser, so there is nothing to install and no sign-in. All pressures are in psi.</p>
+  <p>This page has the links and files for our jaw project. Students use these all semester. Everything runs in a web browser, so there is nothing to install and no sign-in. All pressures are in psi.</p>
 
   <h2>Pages</h2>
   <table>
     <tr><th>Link</th><th>What it does</th><th>Guide</th></tr>
-    <tr><td><a href="./">Scoreboard</a></td><td>Live results for the projector. Ranks teams by strongest bite, by muscle orientation, and by calculated vs. measured force. Students can open it on their phones too.</td><td><a href="https://drive.google.com/file/d/1Opzebr57eLpjEqtTshrPqxRlIau0_ySk/view?usp=sharing">How to use</a></td></tr>
+    <tr><td><a href="./">Scoreboard</a></td><td>Live results for the projector. Ranks teams by strongest bite, by muscle orientation, and by calculated vs. measured force. Students can open it on their phones too.</td><td><a href="https://drive.google.com/file/d/1lj9n25CqP99jl9sHU9hoPTbBi3MKImQR/view?usp=sharing">How to use</a></td></tr>
     <tr><td><a href="./#station">Team station</a></td><td>One per team, on a laptop in Chrome or Edge. Connects to the load cell over USB and saves the peak force of every squeeze.</td><td><a href="https://drive.google.com/file/d/15-6Lnbkd1CwKo8lTXHO_bm9jrcf0oykV/view?usp=sharing">How to use</a></td></tr>
-    <tr><td><a href="tools/jaw-calculator.html">Jaw force calculator</a></td><td>Uses the team's muscle model from the characterization page and the jaw measurements to predict the bite force for each orientation, with the uncertainty, the best muscle angle, and every step of the math shown. It also works Challenge 1 backward to a pressure, and can load a team's squeezes from the scoreboard to compare.</td><td><a href="https://drive.google.com/file/d/1vE1QuXgtknTjUk4NuWX14OIA7h71vY3V/view?usp=sharing">How to use</a></td></tr>
-    <tr><td><a href="tools/muscle-characterization.html">Muscle characterization</a></td><td>Paste in the force/pressure logger output. It fits F = P(c₁ − c₂ε), predicts muscle force for any pressure and contraction, and saves the model so the jaw calculator can use it.</td><td><a href="https://drive.google.com/file/d/1am4YOiL4VXdsihKW4QFuSUmCzwrBapci/view?usp=sharing">How to use</a></td></tr>
+    <tr><td><a href="tools/jaw-calculator.html">Jaw force calculator</a></td><td>Uses the team's muscle model from the characterization page and the jaw measurements to predict the bite force for each orientation, with the uncertainty, the best muscle angle, and every step of the math shown. It also works Challenge 1 backward to a pressure, and can load a team's squeezes from the scoreboard to compare.</td><td><a href="https://drive.google.com/file/d/1Opzebr57eLpjEqtTshrPqxRlIau0_ySk/view?usp=sharing">How to use</a></td></tr>
+    <tr><td><a href="tools/muscle-characterization.html">Muscle characterization</a></td><td>Paste in the force/pressure logger output. It fits F = P(c₁ − c₂ε) + c₀, predicts muscle force for any pressure and contraction, and saves the model so the jaw calculator can use it.</td><td><a href="https://drive.google.com/file/d/1am4YOiL4VXdsihKW4QFuSUmCzwrBapci/view?usp=sharing">How to use</a></td></tr>
     <tr><td><a href="tools/muscle-pressure.html">Muscle pressure: leak test</a></td><td>Measures leakage on the muscle by itself: graphs pressure over time after the muscle is filled and the air line is pinched shut, and gives the peak pressure and how fast it leaks (psi per second).</td><td><a href="https://drive.google.com/file/d/1fF00G31CKlRnlN5swF3SZMw2_DQHdNsM/view?usp=sharing">How to use</a></td></tr>
-    <tr><td><a href="tools/lift-test.html">Lift test</a></td><td>Syringe volume and pressure in, mass and lift height out. Gives the energy put in, the work done, the efficiency, and the energy lost to hysteresis.</td><td><a href="https://drive.google.com/file/d/1lj9n25CqP99jl9sHU9hoPTbBi3MKImQR/view?usp=sharing">How to use</a></td></tr>
+    <tr><td><a href="tools/lift-test.html">Lift test</a></td><td>Syringe volume and pressure in, mass and lift height out. Gives the energy put in, the work done, the efficiency, and the energy lost to hysteresis.</td><td><a href="https://drive.google.com/file/d/1vE1QuXgtknTjUk4NuWX14OIA7h71vY3V/view?usp=sharing">How to use</a></td></tr>
   </table>
   <p class="small">The how-to guides open in Google Drive and need a Rowan sign-in.</p>
-
-  <h2>Semester plan (Spring 2027)</h2>
-  <p>Two lectures and one lab a week. The project starts the second week of classes and ends before Reading and Review Day.</p>
-  <table class="plan">
-    <tr><th>Week</th><th>Dates</th><th>What happens</th><th>Page</th></tr>
-    <tr><td colspan="4"><b>Stage 1: Build muscles and characterize performance</b></td></tr>
-    <tr><td>1</td><td>Jan 25–29</td><td>How the muscle works, V2 design vs. the old one</td><td></td></tr>
-    <tr><td>2</td><td>Feb 1–5</td><td>Build two muscles, leak check</td><td></td></tr>
-    <tr><td>3</td><td>Feb 8–12</td><td>Measure D₀, L₀, braid angle; predict force; leak test</td><td><a href="tools/muscle-pressure.html">Muscle pressure</a></td></tr>
-    <tr><td>4</td><td>Feb 15–19</td><td>Force vs. pressure on the test stand; lift test</td><td><a href="tools/muscle-characterization.html">Muscle characterization</a>, <a href="tools/lift-test.html">Lift test</a></td></tr>
-    <tr><td>5</td><td>Feb 22–26</td><td>Fit the muscle model, efficiency; Muscle Showcase</td><td><a href="tools/muscle-characterization.html">Muscle characterization</a>, <a href="./">Scoreboard</a></td></tr>
-    <tr><td colspan="4"><b>Stage 2: Exploration with standard jaws</b></td></tr>
-    <tr><td>6</td><td>Mar 1–5</td><td>Pick a jaw, model all seven orientations</td><td><a href="tools/jaw-calculator.html">Jaw force calculator</a></td></tr>
-    <tr><td>7</td><td>Mar 8–12</td><td>Challenge 1: get a target force, work backward to a pressure, lock in the prediction</td><td><a href="tools/jaw-calculator.html">Jaw force calculator</a> (section 4)</td></tr>
-    <tr><td></td><td>Mar 15–20</td><td>Spring break</td><td></td></tr>
-    <tr><td>8</td><td>Mar 22–26</td><td>Leak check, then test the prediction</td><td><a href="./#station">Team station</a></td></tr>
-    <tr><td>9</td><td>Mar 29–Apr 2</td><td>Measured vs. predicted, % error, inside the error bar or not</td><td><a href="tools/jaw-calculator.html">Jaw force calculator</a></td></tr>
-    <tr><td colspan="4"><b>Stage 3: Jaw performance analysis and persuasion</b></td></tr>
-    <tr><td>10</td><td>Apr 5–9</td><td>Challenge 2: hold one variable, change the other two, get the most force; jaw lift test</td><td><a href="./#station">Team station</a>, <a href="tools/lift-test.html">Lift test</a></td></tr>
-    <tr><td>11</td><td>Apr 12–16</td><td>Build the argument</td><td></td></tr>
-    <tr><td>12</td><td>Apr 19–23</td><td>Slides and practice</td><td></td></tr>
-    <tr><td>13</td><td>Apr 26–29</td><td>Final presentations</td><td></td></tr>
-  </table>
 
   <h2>The two challenges</h2>
   <ul>
@@ -101,17 +77,6 @@ footer { margin-top: 40px; font-size: 14px; color: #555; }
   </table>
   <p class="small">The load cell sketches need the "HX711 Arduino Library" by Bogdan Necula, and the pressure logger needs the "Adafruit MPRLS Library". Both are in the Arduino Library Manager.</p>
 
-  <h2>Week 4: force vs. pressure test</h2>
-  <ol>
-    <li>Hang the muscle from the load cell, with the syringe, tee and pressure sensor on the same air line.</li>
-    <li>Upload <code>muscle_force_pressure.ino</code> and open the Serial Monitor (115200 baud, Newline).</li>
-    <li>With the muscle deflated, type <code>t</code> to zero both sensors.</li>
-    <li>Set the muscle length with the turnbuckle, measure how much it has shortened, and type <code>c</code> and the number in mm (for example <code>c12</code>).</li>
-    <li>Push the syringe up through about six pressures and type <code>h</code> at each one. Then come back down through a few.</li>
-    <li>Do the same at two or more other lengths. Type <code>n</code> before repeating a trial.</li>
-    <li>Paste everything from the Serial Monitor into the <a href="tools/muscle-characterization.html">muscle characterization page</a> and enter the muscle's length, diameter and braid turns.</li>
-  </ol>
-
   <h2>Week 3: leak test</h2>
   <p>This is done on the muscle by itself, on the muscle test stand. No jaw.</p>
   <ol>
@@ -122,6 +87,18 @@ footer { margin-top: 40px; font-size: 14px; color: #555; }
     <li>Type <code>k</code>. It records for 30 seconds. Don't touch anything.</li>
     <li>Copy the line that starts with DATA into the <a href="tools/muscle-pressure.html">leak test page</a>. Do 2 or 3 tests and paste each DATA line to average them.</li>
   </ol>
+
+  <h2>Week 4: force vs. pressure test</h2>
+  <ol>
+    <li>Hang the muscle from the load cell on the test stand, with the compressor, tee and pressure sensor on the same air line.</li>
+    <li>Close the Arduino IDE, plug the stand's Arduino into the laptop, open the <a href="tools/muscle-characterization.html">muscle characterization page</a> in Chrome or Edge, and click <b>Connect Arduino</b>.</li>
+    <li>With the muscle deflated and nothing pulling, click <b>Zero</b>.</li>
+    <li>Set the turnbuckle, and type how many mm shorter than its resting length the muscle is held (read it on the ruler behind the muscle).</li>
+    <li>Click <b>Start recording</b>, slowly raise the pressure with the regulator, slowly lower it, and click <b>Stop</b>.</li>
+    <li>Do the same at two more turnbuckle settings. Keep the force under about 40 N.</li>
+    <li>Enter the muscle's length, diameter and braid turns, then save the model for the jaw calculator.</li>
+  </ol>
+  <p class="small">No Connect Arduino? Use the Serial Monitor (115200 baud, Newline): <code>t</code> to zero, <code>c12</code> for the contraction in mm, <code>s</code> to start and stop recording. Then paste everything into the muscle characterization page as is.</p>
 
   <h2>Weeks 4 and 10: lift test</h2>
   <ol>
