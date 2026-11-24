@@ -50,7 +50,7 @@ It uses the same equations as `jaw_force_app.m`, the MATLAB version, which still
 | `tools/muscle-characterization.html` | Muscle fit, predicted force, and model export to the jaw calculator (Stage 1) |
 | `tools/force-pressure.html` | Old link; forwards to the characterization page |
 | `arduino/muscle_force_pressure/` | Arduino logger for pressure and force together (Stage 1) |
-| `tools/muscle-pressure.html` | Muscle pressure over time: peak, leak rate, and hold time |
+| `tools/muscle-pressure.html` | Leak test: pressure over time, peak, and leak rate |
 | `tools/lift-test.html` | Lift test: energy in (∫P dV), work out (mgΔh), efficiency, hysteresis loss |
 | `arduino/muscle_pressure_logger/` | MPRLS pressure recorder for the UNO R4 WiFi (prints DATA lines) |
 | `database.rules.json` | Security rules to paste into Firebase |

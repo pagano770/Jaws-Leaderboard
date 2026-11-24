@@ -128,7 +128,7 @@ code, kbd, pre, textarea, input, select, button { font-family: var(--font-body);
   <header>
     <h1>Muscle Pressure: Leak Test</h1>
     <p>Paste the DATA line from each leak test. On the muscle test stand, the <a href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/arduino/muscle_force_pressure/muscle_force_pressure.ino" target="_blank" rel="noopener">force and pressure code</a> prints it when you type <b>k</b>. The older <a href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/arduino/muscle_pressure_logger/muscle_pressure_logger.ino" target="_blank" rel="noopener">pressure logger</a> works too. One line draws that test; several lines are lined up and averaged. Line them up at the peak to compare leak rates.</p>
-    <p><b>What this measures:</b> leakage. Fill the muscle with the air compressor, close the shutoff valve, and the page measures how fast the pressure drops. That is the leak rate. A muscle that leaks loses pressure, and so loses force, while the jaw is squeezing. We use it to check that the V2 seal (silicone ring and hose clamps) works, and it is one of the numbers teams are ranked on at the Muscle Showcase.</p>
+    <p><b>What this measures:</b> leakage. Fill the muscle with the air compressor, pinch the air line shut, and the page measures how fast the pressure drops. That is the leak rate. A muscle that leaks loses pressure, and so loses force, while the jaw is squeezing. We use it to check that the V2 seal (silicone ring and hose clamps) works, and it is one of the numbers teams are ranked on at the Muscle Showcase.</p>
   </header>
 
   <section class="panel chart-panel">
@@ -152,7 +152,7 @@ code, kbd, pre, textarea, input, select, button { font-family: var(--font-body);
         <tbody id="testsBody"></tbody>
       </table>
     </div>
-    <p class="note" id="leakNote" hidden>Leak rate only means something for leak tests, where the muscle is filled and then the valve is closed. If air is still coming in or being let out, the pressure changes for that reason, not because of a leak.</p>
+    <p class="note" id="leakNote" hidden>Leak rate only means something for leak tests, where the muscle is filled and then the air line is pinched shut. If air is still coming in or being let out, the pressure changes for that reason, not because of a leak.</p>
   </section>
 
   <section class="panel tests-panel" id="calcPanel" hidden>
@@ -164,7 +164,7 @@ code, kbd, pre, textarea, input, select, button { font-family: var(--font-body);
   <section class="panel input-panel">
     <div>
       <h2>Serial Monitor output</h2>
-      <p class="hint">Fill the muscle with the compressor, close the shutoff valve, and type <b>k</b> in the Serial Monitor. After 30 seconds, copy the line that starts with <b>DATA</b> and paste it here on its own line. Paste more DATA lines underneath to average several tests.</p>
+      <p class="hint">Fill the muscle with the compressor, pinch the air line shut, and type <b>k</b> in the Serial Monitor. After 30 seconds, copy the line that starts with <b>DATA</b> and paste it here on its own line. Paste more DATA lines underneath to average several tests.</p>
       <textarea id="raw" spellcheck="false" aria-label="Serial Monitor output"></textarea>
     </div>
     <div class="side">
@@ -192,11 +192,6 @@ code, kbd, pre, textarea, input, select, button { font-family: var(--font-body);
         <label for="interval">Seconds between readings</label>
         <input type="number" id="interval" value="0.1" min="0.01" step="0.05">
         <small class="hint" style="margin:0">Only used for data without times. DATA lines carry their own.</small>
-      </div>
-      <div class="field">
-        <label for="needP">Pressure your jaw needs (psi)</label>
-        <input type="number" id="needP" min="0" step="0.1" placeholder="optional">
-        <small class="hint" style="margin:0">Gives how long the muscle can hold a bite. Get it from the target panel in the jaw calculator.</small>
       </div>
       <div class="buttons">
         <button id="clearBtn" type="button">Clear</button>
@@ -435,19 +430,7 @@ code, kbd, pre, textarea, input, select, button { font-family: var(--font-body);
     }
     $("calcIntro").textContent = "Every test is measured over the same " + fmt(window, 1) +
       " s after its own peak: the time from the peak to the end of the shortest test. The line of best fit uses every reading in that window, so one noisy reading barely moves it; its slope is the leak rate. R² near 1 means the pressure drops at a steady rate; a low R² means the drop is curved (fast at first, then slower), and the leak rate is an average over the window. The two-point rate is shown for comparison.";
-    // hold time: how long until the leak drops below the pressure the jaw needs
-    let hold = "";
-    const need = parseFloat($("needP").value), p0 = mean(startArr), r = mean(fitRate);
-    if (need > 0) {
-      hold = "<div class=\"calc-card calc-avg\"><h3>Hold time</h3><ol>" +
-        "<li><span>Start pressure (average after the peak)</span><code>" + fmt(p0, 2) + " PSI</code></li>" +
-        "<li><span>Leak rate (best fit" + (n > 1 ? ", average" : "") + ")</span><code>" + fmt(r, 3) + " PSI/s</code></li>" +
-        (need >= p0 ? "<li><span>The muscle never got up to " + fmt(need, 2) + " PSI in these tests, so there is nothing to hold.</span><code>Fill it higher and test again.</code></li>"
-          : r > 0 ? "<li><span>Hold time = (start − needed) ÷ leak rate</span><code>(" + fmt(p0, 2) + " − " + fmt(need, 2) + ") ÷ " + fmt(r, 3) + " = " + fmt((p0 - need) / r, 1) + " s</code></li>"
-          : "<li><span>No measurable leak in this window</span><code>it holds longer than the " + fmt(window, 0) + " s recording</code></li>") +
-        "</ol></div>";
-    }
-    $("calcBody").innerHTML = cards + avg + hold;
+    $("calcBody").innerHTML = cards + avg;
     $("calcPanel").hidden = false;
 
     statusEl.className = "status";
@@ -603,7 +586,6 @@ code, kbd, pre, textarea, input, select, button { font-family: var(--font-body);
     scheduled();
   });
   [zero, alignMode, pct, fitOn].forEach(el => el.addEventListener("change", update));
-  $("needP").addEventListener("input", update);
   interval.addEventListener("input", scheduled);
   $("clearBtn").addEventListener("click", () => {
     raw.value = ""; isExample = false; exampleTag.hidden = true; update(); raw.focus();

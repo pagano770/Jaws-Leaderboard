@@ -46,7 +46,7 @@ footer { margin-top: 40px; font-size: 14px; color: #555; }
     <tr><td><a href="./#station">Team station</a></td><td>One per team, on a laptop in Chrome or Edge. Connects to the load cell over USB and saves the peak force of every squeeze.</td></tr>
     <tr><td><a href="tools/jaw-calculator.html">Jaw force calculator</a></td><td>Uses the team's muscle model from the characterization page and the jaw measurements to predict the bite force for each orientation, with the uncertainty, the best muscle angle, and every step of the math shown. It also works Challenge 1 backward to a pressure, and can load a team's squeezes from the scoreboard to compare.</td></tr>
     <tr><td><a href="tools/muscle-characterization.html">Muscle characterization</a></td><td>Paste in the force/pressure logger output. It fits F = P(c₁ − c₂ε), predicts muscle force for any pressure and contraction, and saves the model so the jaw calculator can use it.</td></tr>
-    <tr><td><a href="tools/muscle-pressure.html">Muscle pressure: leak test</a></td><td>Measures leakage: graphs pressure over time after the muscle is filled and the valve is closed, and gives the peak pressure and how fast it leaks (psi per second). It can also show how long the leak lets the jaw hold a bite.</td></tr>
+    <tr><td><a href="tools/muscle-pressure.html">Muscle pressure: leak test</a></td><td>Measures leakage on the muscle by itself: graphs pressure over time after the muscle is filled and the air line is pinched shut, and gives the peak pressure and how fast it leaks (psi per second).</td></tr>
     <tr><td><a href="tools/lift-test.html">Lift test</a></td><td>Syringe volume and pressure in, mass and lift height out. Gives the energy put in, the work done, the efficiency, and the energy lost to hysteresis.</td></tr>
   </table>
 
@@ -112,11 +112,12 @@ footer { margin-top: 40px; font-size: 14px; color: #555; }
   </ol>
 
   <h2>Week 3: leak test</h2>
+  <p>This is done on the muscle by itself, on the muscle test stand. No jaw.</p>
   <ol>
-    <li>On the muscle test stand, put the shutoff valve between the compressor and the muscle.</li>
     <li>Unhook the bottom of the muscle so it hangs free and nothing pulls on the load cell.</li>
     <li>Open the Serial Monitor (115200 baud, Newline) for the stand's Arduino and type <code>t</code> to zero with the muscle deflated.</li>
-    <li>Open the valve and fill the muscle to the pressure you want to test (for example, the pressure your jaw needs). Then close the valve.</li>
+    <li>Fill the muscle with the compressor to the test pressure (the same for every team).</li>
+    <li>Pinch the air line shut between the compressor and the tee, so the pressure sensor stays on the muscle's side. Fold the tubing over and clamp it with a binder clip, or squeeze it with a pinch clamp.</li>
     <li>Type <code>k</code>. It records for 30 seconds. Don't touch anything.</li>
     <li>Copy the line that starts with DATA into the <a href="tools/muscle-pressure.html">leak test page</a>. Do 2 or 3 tests and paste each DATA line to average them.</li>
   </ol>

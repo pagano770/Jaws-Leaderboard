@@ -17,8 +17,8 @@
 // Other commands:
 //   n        new trial number (for repeats of the whole set)
 //   h        one manual point: hold still, averages 2 s, prints one STEP line
-//   k        leak test: fill the muscle, close the shutoff valve, unhook the bottom
-//            of the muscle, then type k. Records 30 s and prints one DATA line for
+//   k        leak test: unhook the bottom of the muscle, fill it, pinch the air
+//            line shut, then type k. Records 30 s and prints one DATA line for
 //            the Muscle Pressure: Leak Test page.
 //   l        live readings on/off (l1 = on, l0 = off)
 //   f123.4   set the load cell factor (counts per newton) without re-uploading
@@ -188,12 +188,12 @@ void hold() {
   printStep(mp, mf, sqrt(vp), sqrt(vf));
 }
 
-// Leak test: fill the muscle with the compressor, close the shutoff valve, then type k.
+// Leak test: fill the muscle with the compressor, pinch the air line shut, then type k.
 // Prints one DATA line (same format as the pressure logger) for the Muscle Pressure: Leak Test page.
 // The line is printed as it records, so nothing else can be printed until it's done.
 void leakTest() {
   if (recording) { Serial.println(F("# stop recording first (type s)")); return; }
-  Serial.print(F("# LEAK TEST: valve closed, muscle hanging free. Recording "));
+  Serial.print(F("# LEAK TEST: air line pinched shut, muscle hanging free. Recording "));
   Serial.print(LEAK_SECONDS, 0); Serial.println(F(" s, don't touch anything. Copy the DATA line when it's done."));
   int n = (int)(LEAK_SECONDS * 1000.0 / LEAK_MS);
   float first = 0, last = 0;
@@ -212,7 +212,7 @@ void leakTest() {
   while (Serial.available()) Serial.read();
   Serial.print(F("# leak test done: ")); Serial.print(first, 2); Serial.print(F(" psi to "));
   Serial.print(last, 2); Serial.print(F(" psi in ")); Serial.print(i * LEAK_MS / 1000.0, 1); Serial.println(F(" s"));
-  if (first < 1.0) Serial.println(F("# Pressure was under 1 psi at the start: fill the muscle and close the valve before typing k."));
+  if (first < 1.0) Serial.println(F("# Pressure was under 1 psi at the start: fill the muscle and pinch the air line shut before typing k."));
 }
 
 void handle(String cmd) {
