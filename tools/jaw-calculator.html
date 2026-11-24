@@ -104,7 +104,7 @@ canvas { display: block; width: 100%; height: 100%; }
     <div class="settings">
       <label>Team name<input type="text" id="team" maxlength="24"></label>
       <label>Muscle force<select id="mode"><option value="1">Sum of both muscles</option><option value="2">Average of both muscles</option></select></label>
-      <label>Muscle model<select id="mm"><option value="class">Class model: a(x − b)</option><option value="measured">Measured muscle model</option></select></label>
+      <label hidden>Muscle model<select id="mm"><option value="measured">From the Muscle Characterization page</option></select></label>
       <label id="aLbl">Muscle coefficient a (N/mm)<input type="number" id="a" step="0.1"></label>
       <label id="sPLbl" hidden>Pressure uncertainty (psi)<input type="number" id="sP" step="0.1" min="0"></label>
       <label>Length uncertainty (mm)<input type="number" id="sL" step="0.1" min="0"></label>
@@ -151,11 +151,13 @@ canvas { display: block; width: 100%; height: 100%; }
   <section class="charts">
     <div class="panel">
       <h2>Calculated vs. measured</h2>
+      <p class="hint">One pair of bars per orientation. The dark bar is the force your model predicts, with its error bar. The gold bar is the average of your team's squeezes from the team station, with their spread. If the gold bar lands inside the dark bar's error bar, the model and the jaw agree.</p>
       <div class="legend"><span><i style="background:var(--air)"></i>Calculated (± uncertainty)</span><span><i style="background:var(--gold);outline:1px solid var(--gold-dk)"></i>Measured (mean ± SD)</span></div>
       <div class="chart-wrap"><canvas id="cBars" aria-label="Calculated and measured force for each orientation"></canvas></div>
     </div>
     <div class="panel">
       <h2>Force vs. muscle angle, orientation <span id="angOri">A</span></h2>
+      <p class="hint">Takes the orientation picked in section 3 and asks: if only the muscle's tilt changed, what force would the model predict? The dot is your measured angle and the star is the angle that gives the most force. No test data goes into this graph.</p>
       <div class="legend"><span><i style="background:var(--air);height:3px;vertical-align:3px"></i>Predicted F_LC</span><span>● your angle</span><span>★ best angle</span></div>
       <div class="chart-wrap"><canvas id="cAng" aria-label="Predicted force as the muscle angle changes"></canvas></div>
     </div>
@@ -180,8 +182,8 @@ canvas { display: block; width: 100%; height: 100%; }
   </section>
 
   <section class="panel">
-    <h2>5. Leaderboard</h2>
-    <p class="hint">Load your team's squeezes from the scoreboard into the Measured column (the 5 most recent for each orientation), or send your calculated forces to the scoreboard's "Calculated vs. measured" board.</p>
+    <h2>5. Connect to the scoreboard</h2>
+    <p class="hint">This page and the scoreboard share the same class database. <b>Load our squeezes</b> copies your team's 5 most recent squeezes for each orientation from the team station into the Measured column above, so you don't have to type them. <b>Send calculated forces</b> puts your predictions on the scoreboard's "Calculated vs. measured" board next to your real squeezes.</p>
     <div class="lb">
       <label>Class<input type="text" id="lbClass" value="main"></label>
       <label>Team slot<select id="lbTeam"></select></label>
@@ -205,26 +207,26 @@ canvas { display: block; width: 100%; height: 100%; }
   const KPA = 6.894757, MODEL = "jaws-muscle-model-v1";
   const EX_MODEL = { v: 1, name: "Example muscle (made-up data)", c1: 0.1223, c2: 0.5217, c0: -2.44, L0: 200, R2: 0.98, example: true };
 
-  // ---------- example (same numbers as the MATLAB app's example) ----------
+  // ---------- example (made-up numbers) ----------
   function example() {
     return {
       team: "Example team", mode: 1, a: -1.6, sL: 0.5, sA: 1.0, sT: 2.0, isExample: true,
       geom: [[5, 22, 12, 95, 25, 24, 15, 16], [8, 26, 12, 95, 25, 24, 14, 14], [10, 34, 12, 95, 25, 24, 13, 14],
              [30, 18, 14, 95, 25, 24, 17, 17], [20, 28, 16, 95, 25, 24, 14, 15], [12, 31, 14, 95, 25, 24, 12, 13],
              [18, 25, 15, 95, 25, 24, 15, 15]],
-      meas: [[9.1, 9.6, 8.8], [11.2, 10.4, 11.0], [14.8, 15.5, 14.1], [7.9, 8.6, 8.1], [12.9, 13.8, 12.2], [15.9, 16.8, 16.1], []],
-      mm: "class", press: [25, 25, 25, 25, 25, 25, 25], sP: 0.5, mdl: null
+      meas: [[4.4, 4.6, 4.5], [5.7, 6.1, 6.0], [8.4, 8.6, 8.5], [4.0, 4.1, 4.6], [7.7, 7.7, 7.3], [7.8, 7.9, 8.0], []],
+      mm: "measured", press: [25, 25, 25, 25, 25, 25, 25], sP: 0.5, mdl: storedModel() || EX_MODEL
     };
   }
   function blank() {
     return { team: "", mode: 1, a: -1.6, sL: 0.5, sA: 1.0, sT: 2.0, isExample: false,
-             geom: LABELS.map(() => Array(8).fill(NaN)), meas: LABELS.map(() => []), mm: D ? D.mm : "class", press: LABELS.map(() => NaN), sP: 0.5, mdl: D ? D.mdl : null };
+             geom: LABELS.map(() => Array(8).fill(NaN)), meas: LABELS.map(() => []), mm: "measured", press: LABELS.map(() => NaN), sP: 0.5, mdl: D ? D.mdl : null };
   }
   let D;
   try { D = JSON.parse(localStorage.getItem(STORE)); } catch (e) { D = null; }
   if (!D || !Array.isArray(D.geom)) D = example();
   D.geom = D.geom.map(r => r.map(v => v === null ? NaN : v));
-  if (!D.mm) D.mm = "class";
+  D.mm = "measured"; // muscle force always comes from the fitted model on the characterization page
   if (!Array.isArray(D.press)) D.press = LABELS.map(() => NaN);
   D.press = D.press.map(v => v === null ? NaN : v);
   if (!isFinite(D.sP)) D.sP = 0.5;
@@ -456,7 +458,7 @@ canvas { display: block; width: 100%; height: 100%; }
   // F_LC = c[P(2c1 - c2(e1 + e2)) + 2c0] arm / R_LC, solved for P
   function target() {
     const out = $("tOut"), i = LABELS.indexOf($("tOri").value), tF = parseFloat($("tF").value);
-    if (D.mm !== "measured" || !D.mdl) { out.innerHTML = "<p>Set Muscle model to <b>Measured muscle model</b> in section 1 and load your model from the Muscle Characterization page.</p>"; return; }
+    if (!D.mdl) { out.innerHTML = "<p>Load your muscle model in section 1 first (from the Muscle Characterization page).</p>"; return; }
     const [thD, RMX, RMY, RLC, , , x1, x2] = D.geom[i], md = D.mdl, c = D.mode === 2 ? 0.5 : 1;
     if (![thD, RMX, RMY, RLC, x1, x2].every(v => isFinite(v)) || RLC <= 0) { out.innerHTML = "<p>Fill in θ, R_MX, R_MY, R_LC, x1 and x2 for orientation " + LABELS[i] + " in section 1. You don't need a pressure for this one.</p>"; return; }
     if (!(tF > 0)) { out.innerHTML = "<p>Enter the target force.</p>"; return; }

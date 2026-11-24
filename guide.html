@@ -44,7 +44,7 @@ footer { margin-top: 40px; font-size: 14px; color: #555; }
     <tr><th>Link</th><th>What it does</th></tr>
     <tr><td><a href="./">Scoreboard</a></td><td>Live results for the projector. Ranks teams by strongest bite, by muscle orientation, and by calculated vs. measured force. Students can open it on their phones too.</td></tr>
     <tr><td><a href="./#station">Team station</a></td><td>One per team, on a laptop in Chrome or Edge. Connects to the load cell over USB and saves the peak force of every squeeze.</td></tr>
-    <tr><td><a href="tools/jaw-calculator.html">Jaw force calculator</a></td><td>Calculates the predicted bite force for each orientation from the jaw measurements, with the uncertainty, the best muscle angle, and every step of the math shown. It can load a team's squeezes from the scoreboard and send the calculated forces back to it.</td></tr>
+    <tr><td><a href="tools/jaw-calculator.html">Jaw force calculator</a></td><td>Uses the team's muscle model from the characterization page and the jaw measurements to predict the bite force for each orientation, with the uncertainty, the best muscle angle, and every step of the math shown. It also works Challenge 1 backward to a pressure, and can load a team's squeezes from the scoreboard to compare.</td></tr>
     <tr><td><a href="tools/muscle-characterization.html">Muscle characterization</a></td><td>Paste in the force/pressure logger output. It fits F = P(c₁ − c₂ε), predicts muscle force for any pressure and contraction, and saves the model so the jaw calculator can use it.</td></tr>
     <tr><td><a href="tools/muscle-pressure.html">Muscle pressure</a></td><td>Graphs pressure over time from the pressure logger and gives the peak pressure, the leak rate, and how long the muscle can hold a bite.</td></tr>
     <tr><td><a href="tools/lift-test.html">Lift test</a></td><td>Syringe volume and pressure in, mass and lift height out. Gives the energy put in, the work done, the efficiency, and the energy lost to hysteresis.</td></tr>
@@ -78,6 +78,18 @@ footer { margin-top: 40px; font-size: 14px; color: #555; }
     <li><b>Challenge 1 (Weeks 7–9):</b> each team gets a bite force and an opening angle. Use your muscle model and jaw model to find the pressure you need, with a range, and turn it in before you test. Section 4 of the <a href="tools/jaw-calculator.html">jaw force calculator</a> does the math and shows every step.</li>
     <li><b>Challenge 2 (Week 10):</b> the jaw has three variables: pressure, opening angle, and orientation (A–G). Your team is told which one to hold constant. Change the other two to get the most force, and use your model to decide what to try.</li>
   </ul>
+
+  <h2>Setting up a team station</h2>
+  <p>Do this once per rig before class. Each rig is an Arduino with an HX711 board and the jaw's load cell. The <a href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/SETUP.md">setup guide</a> has the wiring and the database steps.</p>
+  <ol>
+    <li>Upload <code>jaw_force_sensor.ino</code> to the Arduino (once per board).</li>
+    <li>Plug the Arduino into the team's laptop with USB. Close the Arduino IDE so it isn't holding the port.</li>
+    <li>Open the <a href="./#station">team station</a> in Chrome or Edge and pick the team's slot.</li>
+    <li>With nothing touching the jaw, click <b>Connect sensor</b> and pick the Arduino's port. The board restarts and zeroes itself.</li>
+    <li>First time only: open <b>Calibrate this rig</b>, press <b>Zero</b>, rest a known mass (for example 500 g) on the load cell, type the mass, and press <b>Calibrate</b>. The Arduino remembers it.</li>
+    <li>Pick the orientation (A to G) being tested and type the team's calculated force for it.</li>
+    <li>Squeeze. Every squeeze over 2 N saves its peak to the scoreboard automatically. Use <b>Pause saving</b> while setting up and <b>Delete</b> for a bad reading.</li>
+  </ol>
 
   <h2>Arduino code</h2>
   <table>

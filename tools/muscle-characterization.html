@@ -157,7 +157,7 @@ button.primary:hover { filter: brightness(1.1); color: var(--panel); }
       </div>
       <div class="step">
         <b>Record a run</b>
-        <p>Set the turnbuckle, type how much the muscle is held short, click Start, slowly raise the pressure, slowly lower it, click Stop.</p>
+        <p>Set the turnbuckle, then type the contraction: how many mm shorter than L₀ the muscle is being held. Read it on the ruler behind the muscle. Click Start, slowly raise the pressure, slowly lower it, click Stop.</p>
         <div class="pair"><input type="number" id="runMm" value="0" min="0" step="0.5" aria-label="Contraction in mm"><span style="align-self:center">mm contraction</span></div>
         <div class="buttons"><button type="button" id="recBtn" disabled>Start recording</button><button type="button" id="undoBtn" disabled>Delete last run</button></div>
       </div>
@@ -170,7 +170,7 @@ button.primary:hover { filter: brightness(1.1); color: var(--panel); }
   <section class="panel input">
     <div>
       <h2>1. Test data</h2>
-      <p class="hint">Paste all the <b>STEP</b> lines (LIVE and # lines are ignored, so pasting everything is fine). You can also type rows as <code>contraction_mm, psi, newtons</code> or add a trial first: <code>trial, contraction_mm, psi, newtons</code>.</p>
+      <p class="hint">If you recorded with <b>Connect Arduino</b> above, your data is already here. If you used the Serial Monitor, copy everything in it and paste it here as is, with no formatting. Only the <b>STEP</b> lines are used, and everything else is skipped. You can also type rows by hand as <code>contraction_mm, psi, newtons</code>.</p>
       <textarea id="raw" spellcheck="false" aria-label="Serial Monitor output"></textarea>
       <details style="margin-top:12px">
         <summary>Every point as a table</summary>
@@ -184,6 +184,7 @@ button.primary:hover { filter: brightness(1.1); color: var(--panel); }
         <div class="row"><label for="D0">Relaxed diameter D₀ (mm)</label><input type="number" id="D0" value="12" step="0.1"></div>
         <div class="row"><label for="turns">Braid turns n over L₀</label><input type="number" id="turns" value="2.5" step="0.1"></div>
         <div class="row"><span>Braid angle θ₀</span><span id="theta" style="font-family:var(--font-mono)">–</span></div>
+        <p class="hint" style="margin:4px 0 0">Measure these on the muscle before the test, deflated. Braid turns: follow one fiber from end to end and count how many times it goes around.</p>
       </div>
       <div class="group"><b>Fit</b>
         <label class="check"><input type="checkbox" id="offset" checked><span>Allow a threshold pressure<small>Adds c₀ so force can start above zero pressure. Real bladders need some pressure before they pull.</small></span></label>
@@ -247,7 +248,7 @@ button.primary:hover { filter: brightness(1.1); color: var(--panel); }
 
   <section class="panel" id="export">
     <h2>4. Use this model in the jaw calculator</h2>
-    <p class="hint">Saves c₁, c₂, c₀ and L₀ so the <a href="jaw-calculator.html" target="_blank" rel="noopener">jaw force calculator</a> can predict muscle force from pressure, in place of a = −1.6 N/mm. On another computer, copy the model code and paste it there.</p>
+    <p class="hint">Saves c₁, c₂, c₀ and L₀ so the <a href="jaw-calculator.html" target="_blank" rel="noopener">jaw force calculator</a> can predict muscle force from pressure, On another computer, copy the model code and paste it there.</p>
     <div class="buttons"><button type="button" class="primary" id="saveModel">Save model for the jaw calculator</button><button type="button" id="copyModel">Copy model code</button><span class="status" id="modelStatus"></span></div>
     <textarea id="modelCode" readonly rows="2" aria-label="Model code" style="height:auto;margin-top:10px"></textarea>
   </section>
@@ -263,12 +264,6 @@ button.primary:hover { filter: brightness(1.1); color: var(--panel); }
     <div class="calc" id="calc"></div>
   </section>
 
-  <section class="panel">
-    <h2>Class model a at one pressure</h2>
-    <p class="hint">The hanging-mass model F = a(x − b) is the fitted formula at one fixed pressure: a = −c₂P ÷ L₀ and b = c₁L₀ ÷ c₂ (free contraction). Pick a pressure to compare with a = −1.6 N/mm.</p>
-    <div class="row" style="max-width:360px"><label for="aP">Pressure (psi)</label><input type="number" id="aP" value="20" step="1" min="0"></div>
-    <div class="eq" id="aOut" style="margin-top:10px">–</div>
-  </section>
 
 </div>
 
@@ -400,7 +395,9 @@ button.primary:hover { filter: brightness(1.1); color: var(--panel); }
     const pth = useOff && c0 < 0 ? -c0 / c1 : 0;
     $("eqNote").textContent = "ε = contraction ÷ L₀ (0.10 = 10%)." +
       (c2 > 0 ? " Predicted free contraction at high pressure: ε = c₁ ÷ c₂ = " + f(c1 / c2 * 100, 1) + "% (" + f(c1 / c2 * L0, 1) + " mm). Check it against your free-contraction test." : "") +
-      (pth > 0 ? " Threshold: the muscle starts pulling at about " + f(pth / KPA, 1) + " psi (" + f(pth, 0) + " kPa)." : "") + warn;
+      (useOff ? " c₀ = " + f(c0, 2) + " N is the offset from the fit. It comes from your own data, not a set value: a negative c₀ means the balloon has to fill before the muscle pulls." : "") +
+      (pth > 0 ? " Threshold: the muscle starts pulling at about " + f(pth / KPA, 1) + " psi (" + f(pth, 0) + " kPa)." : "") +
+      (isExample ? " These are made-up example numbers." : "") + warn;
 
     // per-level table
     const levelInfo = levels.map((cmm, i) => {
@@ -444,11 +441,6 @@ button.primary:hover { filter: brightness(1.1); color: var(--panel); }
       "<li><span>Pressure conversion</span><code>kPa = psi × 6.895</code></li>" +
       "<li><span>Per psi: multiply by 6.895</span><code>c₁ = " + f(c1 * KPA, 3) + " N/psi, c₂ = " + f(c2 * KPA, 3) + " N/psi, ideal c₁ = " + f(c1Ideal * KPA, 3) + " N/psi</code></li></ol></div>";
 
-    // a calculator
-    const aPsi = +$("aP").value || 0, aP = aPsi * KPA;
-    $("aOut").textContent = c2 > 0
-      ? "At " + f(aPsi, 1) + " psi (" + f(aP, 0) + " kPa):  a = −" + f(c2, 4) + " × " + f(aP, 0) + " ÷ " + f(L0, 0) + " = " + f(-c2 * aP / L0, 3) + " N/mm,   b = " + f(c1 / c2 * L0, 1) + " mm"
-      : "Hold at least two contractions to get c₂.";
 
     // all-points table
     $("allRows").innerHTML = pts.map(p => "<tr><td class='num'>" + p.trial + "</td><td class='num'>" + f(p.cmm, 1) + "</td><td class='num'>" + f(p.eps * 100, 1) + "</td><td class='num'>" + f(p.P, 1) + "</td><td>" + (p.dir === "up" ? "rising" : "falling") + "</td><td class='num'>" + f(p.F, 2) + "</td><td class='num'>" + f(pred(p), 2) + "</td><td class='num'>" + f(p.F - pred(p), 2) + "</td></tr>").join("");
@@ -758,7 +750,7 @@ button.primary:hover { filter: brightness(1.1); color: var(--panel); }
   // ---------- wiring ----------
   let timer; const later = () => { clearTimeout(timer); timer = setTimeout(update, 120); };
   $("raw").addEventListener("input", () => { if (isExample) { isExample = false; $("exampleTag").hidden = true; } later(); });
-  ["L0", "D0", "turns", "aP"].forEach(id => $(id).addEventListener("input", later));
+  ["L0", "D0", "turns"].forEach(id => $(id).addEventListener("input", later));
   ["offset", "ideal", "unit"].forEach(id => $(id).addEventListener("change", update));
   $("clearBtn").addEventListener("click", () => {
     const b = $("clearBtn");
