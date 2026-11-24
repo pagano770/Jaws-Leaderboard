@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Lift Test: Work and Efficiency</title>
+<style>
+:root {
+  --bg: #f6f1e9; --panel: #ffffff; --ink: #2a1a12; --muted: #6e5a4c; --line: #e4d9cb;
+  --air: #57150B; --gold: #ffcc00; --gold-dk: #b08400; --soft: rgba(87,21,11,0.12);
+  --bad: #b3361f;
+  --font: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1a120d; --panel: #251a14; --ink: #f4ece3; --muted: #bba795; --line: #3d2c22;
+    --air: #ffcc00; --gold: #ffcc00; --gold-dk: #ffdd66; --soft: rgba(255,204,0,0.15);
+    --bad: #ff8a73; color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--font); }
+input, select, button, textarea { font-family: var(--font); }
+a { color: var(--air); }
+.wrap {
+  max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px;
+  padding: max(24px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(48px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+}
+.back { font-size: .9rem; }
+header { border-bottom: 2px solid var(--air); padding-bottom: 10px; }
+h1 { font-size: 1.9rem; margin: 0; color: var(--air); }
+header p { margin: 4px 0 0; color: var(--muted); max-width: 72ch; }
+h2 { font-size: 1.15rem; margin: 0 0 8px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 3px; padding: 16px; min-width: 0; }
+.hint { margin: 0 0 10px; color: var(--muted); font-size: .88rem; }
+.grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 18px; }
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 14px; margin-bottom: 12px; }
+.fields label { display: flex; flex-direction: column; gap: 3px; font-size: .85rem; color: var(--muted); }
+input, select { font-size: .92rem; padding: 5px 7px; border: 1px solid var(--line); border-radius: 3px; background: var(--bg); color: var(--ink); min-width: 0; }
+textarea { width: 100%; height: 220px; font-size: .9rem; padding: 8px; border: 1px solid var(--line); border-radius: 3px; background: var(--bg); color: var(--ink); resize: vertical; }
+.buttons { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+button { font-size: .88rem; font-weight: bold; padding: 7px 13px; border-radius: 3px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
+button:hover { border-color: var(--air); color: var(--air); }
+.status { font-size: .86rem; color: var(--muted); }
+.status.err { color: var(--bad); }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.stat .k { font-size: .85rem; color: var(--muted); }
+.stat .v { font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+.stat .v small { font-size: .8rem; color: var(--muted); margin-left: 3px; }
+.stat .sub { font-size: .8rem; color: var(--muted); }
+.chart-wrap { position: relative; height: 320px; }
+canvas { display: block; width: 100%; height: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: .82rem; color: var(--muted); margin-bottom: 6px; }
+.legend i { display: inline-block; width: 14px; height: 10px; margin-right: 5px; vertical-align: -1px; }
+.math section { border-top: 1px solid var(--line); padding: 10px 0; }
+.math h3 { font-size: 1rem; margin: 0 0 6px; color: var(--air); }
+.math p { margin: 3px 0; }
+.math .eq { font-variant-numeric: tabular-nums; padding-left: 14px; }
+.bad { color: var(--bad); }
+.note-ex { font-style: italic; color: var(--muted); font-size: .88rem; margin: 0; }
+[hidden] { display: none !important; }
+@media (max-width: 820px) {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../guide.html">← JAWS Project</a>
+  <header>
+    <h1>Lift Test: Work and Efficiency</h1>
+    <p>Hang a known mass, push the syringe, and measure how far the mass rises. This page works out the energy the syringe put in, the work that came out, and the efficiency. Use it on the muscle alone in Week 4 and on the jaw in Week 10.</p>
+  <p class="howto"><a href="https://drive.google.com/file/d/1lj9n25CqP99jl9sHU9hoPTbBi3MKImQR/view?usp=sharing" target="_blank" rel="noopener">How to use this page</a> (step-by-step guide in Google Drive, Rowan sign-in needed)</p>
+  </header>
+
+  <p class="note-ex" id="exNote" hidden>Showing made-up example numbers. Clear them and type in your own.</p>
+
+  <section class="grid">
+    <div class="panel">
+      <h2>1. Your test</h2>
+      <div class="fields">
+        <label>What was tested<select id="what"><option value="muscle">Muscle (Week 4)</option><option value="jaw">Jaw (Week 10)</option></select></label>
+        <label>Mass lifted (g)<input type="number" id="mass" min="0" step="10"></label>
+        <label>Height it rose (mm)<input type="number" id="lift" min="0" step="0.5"></label>
+      </div>
+      <p class="hint">Syringe readings, one per line: <b>volume in mL, pressure in psi</b>. Start at 0 mL, go up mark by mark, then come back down. The way down is used for hysteresis, so it's optional.</p>
+      <textarea id="raw" spellcheck="false" aria-label="Syringe volume and pressure readings"></textarea>
+      <div class="buttons">
+        <button type="button" id="clearBtn">Clear</button>
+        <button type="button" id="exBtn">Show example</button>
+        <span class="status" id="status"></span>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Pressure vs. volume</h2>
+      <div class="legend"><span><i style="background:var(--air)"></i>pushing in</span><span><i style="background:var(--gold);outline:1px solid var(--gold-dk)"></i>letting out</span><span><i style="background:var(--soft)"></i>energy lost (loop)</span></div>
+      <div class="chart-wrap"><canvas id="cv" aria-label="Pressure versus syringe volume"></canvas></div>
+    </div>
+  </section>
+
+  <section class="stats">
+    <div class="panel stat"><div class="k">Energy in, ∫P dV</div><div class="v" id="sIn">–</div><div class="sub" id="sInS"></div></div>
+    <div class="panel stat"><div class="k">Work out, mgΔh</div><div class="v" id="sOut">–</div><div class="sub" id="sOutS"></div></div>
+    <div class="panel stat"><div class="k">Efficiency η</div><div class="v" id="sEta">–</div><div class="sub" id="sEtaS"></div></div>
+    <div class="panel stat"><div class="k">Lost to hysteresis</div><div class="v" id="sHys">–</div><div class="sub" id="sHysS"></div></div>
+  </section>
+
+  <section class="panel">
+    <h2>2. How the numbers were calculated</h2>
+    <div class="math" id="math"><p class="hint">Enter a mass, a height and at least two syringe readings.</p></div>
+  </section>
+</div>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const MJ_PER_PSI_ML = 6.894757; // 1 psi × 1 mL = 6.895 mJ
+  const G = 9.81;
+  const SAVE = "jaws-lift-test-v1";
+  const EX = { what: "muscle", mass: 500, lift: 18,
+    raw: "0, 0\n5, 2.1\n10, 4.6\n15, 7.4\n20, 10.5\n25, 13.9\n30, 17.6\n25, 12.0\n20, 8.9\n15, 6.1\n10, 3.6\n5, 1.4\n0, 0" };
+  let isExample = false;
+
+  const f = (n, d) => isFinite(n) ? (Math.abs(n) < 0.5 * 10 ** -d ? 0 : n).toFixed(d) : "–";
+
+  function parse(txt) {
+    const pts = [];
+    txt.split(/\r?\n/).forEach(line => {
+      const m = line.split(/[,;\t ]+/).map(parseFloat).filter(v => isFinite(v));
+      if (m.length >= 2) pts.push([m[0], m[1]]);
+    });
+    return pts;
+  }
+  // split at the largest volume: before it is pushing in, after it is letting out
+  function split(pts) {
+    let k = 0;
+    pts.forEach((p, i) => { if (p[0] > pts[k][0]) k = i; });
+    return { up: pts.slice(0, k + 1), down: pts.slice(k) };
+  }
+  function trap(pts) {
+    let a = 0;
+    for (let i = 1; i < pts.length; i++) a += (pts[i][0] - pts[i - 1][0]) * (pts[i][1] + pts[i - 1][1]) / 2;
+    return a;
+  }
+
+  let view = null;
+  function update() {
+    const pts = parse($("raw").value), mass = parseFloat($("mass").value), lift = parseFloat($("lift").value);
+    const st = $("status");
+    save();
+    $("exNote").hidden = !isExample;
+    if (pts.length < 2) {
+      view = null; draw(); clearStats();
+      st.className = "status"; st.textContent = pts.length ? "Need at least two readings." : "";
+      $("math").innerHTML = "<p class='hint'>Enter a mass, a height and at least two syringe readings.</p>";
+      return;
+    }
+    const { up, down } = split(pts);
+    const inPsiMl = trap(up), Ein = inPsiMl * MJ_PER_PSI_ML;
+    const backPsiMl = down.length > 1 ? -trap(down) : NaN, Eback = backPsiMl * MJ_PER_PSI_ML;
+    const loop = Ein - Eback;
+    const Wout = mass > 0 && lift > 0 ? mass / 1000 * G * lift : NaN; // g·m/s²·mm = mJ
+    const eta = Wout / Ein;
+    view = { up, down };
+
+    $("sIn").innerHTML = f(Ein, 1) + "<small>mJ</small>";
+    $("sInS").textContent = f(inPsiMl, 1) + " psi·mL";
+    $("sOut").innerHTML = isFinite(Wout) ? f(Wout, 1) + "<small>mJ</small>" : "–";
+    $("sOutS").textContent = isFinite(Wout) ? f(mass, 0) + " g raised " + f(lift, 1) + " mm" : "enter mass and height";
+    $("sEta").innerHTML = isFinite(eta) && Ein > 0 ? f(eta * 100, 1) + "<small>%</small>" : "–";
+    $("sEtaS").textContent = $("what").value === "jaw" ? "whole jaw" : "muscle alone";
+    $("sHys").innerHTML = isFinite(loop) ? f(loop, 1) + "<small>mJ</small>" : "–";
+    $("sHysS").textContent = isFinite(loop) && Ein > 0 ? f(loop / Ein * 100, 0) + "% of the energy in" : "needs readings on the way down";
+
+    const s = [];
+    s.push("<section><h3>1. Energy in from the syringe</h3>" +
+      "<p>The area under the pressure vs. volume curve while pushing in, by the trapezoidal rule: each step adds (ΔV) × (average of the two pressures).</p>" +
+      "<p class='eq'>" + up.slice(1).map((p, i) => "(" + f(p[0] - up[i][0], 1) + ")(" + f((p[1] + up[i][1]) / 2, 2) + ")").join(" + ") + " = " + f(inPsiMl, 2) + " psi·mL</p>" +
+      "<p class='eq'>E_in = " + f(inPsiMl, 2) + " psi·mL × 6.895 mJ per psi·mL = <b>" + f(Ein, 1) + " mJ</b></p></section>");
+    s.push("<section><h3>2. Work out</h3>" + (isFinite(Wout)
+      ? "<p class='eq'>W_out = m g Δh = " + f(mass / 1000, 3) + " kg × 9.81 m/s² × " + f(lift / 1000, 4) + " m = " + f(Wout / 1000, 4) + " J = <b>" + f(Wout, 1) + " mJ</b></p>"
+      : "<p>Enter the mass and the height it rose.</p>") + "</section>");
+    s.push("<section><h3>3. Efficiency</h3>" + (isFinite(eta) && Ein > 0
+      ? "<p class='eq'>η = W_out ÷ E_in = " + f(Wout, 1) + " ÷ " + f(Ein, 1) + " = <b>" + f(eta * 100, 1) + "%</b></p>" +
+        "<p>The rest went into stretching the balloon, friction in the braid, compressing the air in the tubing" + ($("what").value === "jaw" ? ", and friction and bending in the jaw" : "") + ". " +
+        "Run the test on the muscle alone and on the jaw: the difference between the two efficiencies is what the jaw itself loses.</p>" +
+        (eta > 1 ? "<p class='bad'>Over 100% isn't possible, so check the mass, the height, and that the readings start at 0 mL.</p>" : "")
+      : "<p>Needs the energy in and the work out.</p>") + "</section>");
+    s.push("<section><h3>4. Hysteresis</h3>" + (isFinite(loop)
+      ? "<p class='eq'>Energy back while letting out = " + f(backPsiMl, 2) + " psi·mL × 6.895 = " + f(Eback, 1) + " mJ</p>" +
+        "<p class='eq'>Lost in the loop = E_in − E_back = " + f(Ein, 1) + " − " + f(Eback, 1) + " = <b>" + f(loop, 1) + " mJ</b></p>" +
+        (loop >= 0 ? "<p>That's the shaded area between the two curves: energy that went into the muscle and didn't come back out.</p>"
+          : "<p class='bad'>More came back out than went in, which can't happen. Check that the readings are in order and the way down really was lower.</p>")
+      : "<p>Take readings on the way back down to see it.</p>") + "</section>");
+    $("math").innerHTML = s.join("");
+    st.className = "status";
+    st.textContent = up.length + " readings pushing in" + (down.length > 1 ? ", " + (down.length - 1) + " letting out." : ".");
+    draw();
+  }
+  function clearStats() {
+    ["sIn", "sOut", "sEta", "sHys"].forEach(id => $(id).textContent = "–");
+    ["sInS", "sOutS", "sEtaS", "sHysS"].forEach(id => $(id).textContent = "");
+  }
+
+  // ---------- chart ----------
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  function nice(range, count) { const r = range / count, p = 10 ** Math.floor(Math.log10(r)), q = r / p; return (q < 1.5 ? 1 : q < 3 ? 2 : q < 7 ? 5 : 10) * p; }
+  function draw() {
+    const cv = $("cv"), box = cv.parentElement.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    cv.width = Math.round(box.width * dpr); cv.height = Math.round(box.height * dpr);
+    const ctx = cv.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const W = box.width, H = box.height;
+    ctx.fillStyle = css("--panel"); ctx.fillRect(0, 0, W, H);
+    if (!view) return;
+    const all = view.up.concat(view.down);
+    const xMaxR = Math.max(1, ...all.map(p => p[0])), yMaxR = Math.max(1, ...all.map(p => p[1]));
+    const xs = nice(xMaxR, 5), ys = nice(yMaxR, 5), xMax = Math.ceil(xMaxR / xs) * xs, yMax = Math.ceil(yMaxR * 1.05 / ys) * ys;
+    const L = 50, R = 12, T = 12, B = 40, pw = W - L - R, ph = H - T - B;
+    const X = v => L + v / xMax * pw, Y = v => T + (1 - v / yMax) * ph;
+    ctx.font = "12px Helvetica, Arial, sans-serif"; ctx.strokeStyle = css("--line"); ctx.fillStyle = css("--muted"); ctx.lineWidth = 1;
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    for (let v = 0; v <= yMax + 1e-9; v += ys) { const y = Math.round(Y(v)) + .5; ctx.beginPath(); ctx.moveTo(L, y); ctx.lineTo(L + pw, y); ctx.stroke(); ctx.fillText(f(v, ys < 1 ? 1 : 0), L - 7, y); }
+    ctx.textAlign = "center"; ctx.textBaseline = "top";
+    for (let v = 0; v <= xMax + 1e-9; v += xs) ctx.fillText(f(v, xs < 1 ? 1 : 0), X(v), T + ph + 6);
+    ctx.fillStyle = css("--ink"); ctx.font = "13px Helvetica, Arial, sans-serif";
+    ctx.fillText("Syringe volume (mL)", L + pw / 2, H - 16);
+    ctx.save(); ctx.translate(13, T + ph / 2); ctx.rotate(-Math.PI / 2); ctx.fillText("Pressure (psi)", 0, 0); ctx.restore();
+    // loop area
+    if (view.down.length > 1) {
+      ctx.beginPath();
+      view.up.forEach((p, i) => i ? ctx.lineTo(X(p[0]), Y(p[1])) : ctx.moveTo(X(p[0]), Y(p[1])));
+      view.down.forEach(p => ctx.lineTo(X(p[0]), Y(p[1])));
+      ctx.closePath(); ctx.fillStyle = css("--soft"); ctx.fill();
+    }
+    const line = (pts, color) => {
+      ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath();
+      pts.forEach((p, i) => i ? ctx.lineTo(X(p[0]), Y(p[1])) : ctx.moveTo(X(p[0]), Y(p[1]))); ctx.stroke();
+      ctx.fillStyle = color; pts.forEach(p => { ctx.beginPath(); ctx.arc(X(p[0]), Y(p[1]), 3.5, 0, 2 * Math.PI); ctx.fill(); });
+    };
+    if (view.down.length > 1) line(view.down, css("--gold-dk"));
+    line(view.up, css("--air"));
+  }
+
+  // ---------- saving ----------
+  function save() {
+    try { localStorage.setItem(SAVE, JSON.stringify({ what: $("what").value, mass: $("mass").value, lift: $("lift").value, raw: $("raw").value, ex: isExample })); } catch (e) {}
+  }
+  function load(d) { $("what").value = d.what || "muscle"; $("mass").value = d.mass ?? ""; $("lift").value = d.lift ?? ""; $("raw").value = d.raw || ""; }
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(SAVE)); } catch (e) {}
+  if (saved && saved.raw) { load(saved); isExample = !!saved.ex; } else { load(EX); isExample = true; }
+
+  $("exBtn").addEventListener("click", () => { load(EX); isExample = true; update(); });
+  $("clearBtn").addEventListener("click", () => { load({ what: $("what").value }); isExample = false; update(); });
+  ["raw", "mass", "lift"].forEach(id => $(id).addEventListener("input", () => { isExample = false; update(); }));
+  $("what").addEventListener("change", update);
+  window.addEventListener("resize", () => { clearTimeout(draw.t); draw.t = setTimeout(draw, 100); });
+  update();
+})();
+</script>
+</body>
+</html>
