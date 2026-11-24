@@ -121,6 +121,8 @@ button { cursor: pointer; }
 .status::before { content: ""; width: .6rem; height: .6rem; border-radius: 50%; background: var(--fitting); }
 .status.live::before { background: #3FA34D; }
 .status.local::before { background: var(--signal); }
+.howto { font-size: .85rem; color: var(--muted); margin-top: .2rem; }
+.howto a { color: inherit; }
 .switch { color: var(--ink); font-weight: 700; text-decoration-thickness: 2px; text-underline-offset: 4px; }
 
 /* Tabs */
@@ -239,6 +241,7 @@ summary { font-weight: 700; cursor: pointer; }
     <div>
       <h1 id="title">Jaw Force Challenge</h1>
       <div class="meta"><span id="classLabel"></span><span id="status" class="status">Connecting</span></div>
+      <div class="howto">How to use: <a href="https://drive.google.com/file/d/1Opzebr57eLpjEqtTshrPqxRlIau0_ySk/view?usp=sharing" target="_blank" rel="noopener">scoreboard</a> · <a href="https://drive.google.com/file/d/15-6Lnbkd1CwKo8lTXHO_bm9jrcf0oykV/view?usp=sharing" target="_blank" rel="noopener">team station</a></div>
     </div>
     <a id="switchView" class="switch" href="#" target="_blank" rel="noopener"></a>
   </header>
