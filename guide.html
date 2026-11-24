@@ -46,7 +46,7 @@ footer { margin-top: 40px; font-size: 14px; color: #555; }
     <tr><td><a href="./#station">Team station</a></td><td>One per team, on a laptop in Chrome or Edge. Connects to the load cell over USB and saves the peak force of every squeeze.</td></tr>
     <tr><td><a href="tools/jaw-calculator.html">Jaw force calculator</a></td><td>Uses the team's muscle model from the characterization page and the jaw measurements to predict the bite force for each orientation, with the uncertainty, the best muscle angle, and every step of the math shown. It also works Challenge 1 backward to a pressure, and can load a team's squeezes from the scoreboard to compare.</td></tr>
     <tr><td><a href="tools/muscle-characterization.html">Muscle characterization</a></td><td>Paste in the force/pressure logger output. It fits F = P(c₁ − c₂ε), predicts muscle force for any pressure and contraction, and saves the model so the jaw calculator can use it.</td></tr>
-    <tr><td><a href="tools/muscle-pressure.html">Muscle pressure: leak test</a></td><td>Measures leakage: graphs pressure over time from the pressure logger after the muscle is filled, and gives the peak pressure and how fast it leaks (psi per second). It can also show how long the leak lets the jaw hold a bite.</td></tr>
+    <tr><td><a href="tools/muscle-pressure.html">Muscle pressure: leak test</a></td><td>Measures leakage: graphs pressure over time after the muscle is filled and the valve is closed, and gives the peak pressure and how fast it leaks (psi per second). It can also show how long the leak lets the jaw hold a bite.</td></tr>
     <tr><td><a href="tools/lift-test.html">Lift test</a></td><td>Syringe volume and pressure in, mass and lift height out. Gives the energy put in, the work done, the efficiency, and the energy lost to hysteresis.</td></tr>
   </table>
 
@@ -95,8 +95,8 @@ footer { margin-top: 40px; font-size: 14px; color: #555; }
   <table>
     <tr><th>File</th><th>Hardware</th><th>Used for</th></tr>
     <tr><td><a href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/jaw_force_sensor.ino">jaw_force_sensor.ino</a></td><td>Uno, HX711, load cell</td><td>Team stations / scoreboard</td></tr>
-    <tr><td><a href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/arduino/muscle_force_pressure/muscle_force_pressure.ino">muscle_force_pressure.ino</a></td><td>Uno, HX711, load cell, 0–80 psi sensor on A0</td><td>Force vs. pressure</td></tr>
-    <tr><td><a href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/arduino/muscle_pressure_logger/muscle_pressure_logger.ino">muscle_pressure_logger.ino</a></td><td>UNO R4 WiFi, Adafruit MPRLS sensor</td><td>Muscle pressure / leak tests</td></tr>
+    <tr><td><a href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/arduino/muscle_force_pressure/muscle_force_pressure.ino">muscle_force_pressure.ino</a></td><td>Uno, HX711, load cell, 0–80 psi sensor on A0</td><td>Force vs. pressure, and the leak test (k)</td></tr>
+    <tr><td><a href="https://github.com/pagano770/Jaws-Leaderboard/blob/main/arduino/muscle_pressure_logger/muscle_pressure_logger.ino">muscle_pressure_logger.ino</a></td><td>UNO R4 WiFi, Adafruit MPRLS sensor</td><td>Older low-pressure leak test with a syringe (under 9 psi)</td></tr>
   </table>
   <p class="small">The load cell sketches need the "HX711 Arduino Library" by Bogdan Necula, and the pressure logger needs the "Adafruit MPRLS Library". Both are in the Arduino Library Manager.</p>
 
@@ -111,12 +111,14 @@ footer { margin-top: 40px; font-size: 14px; color: #555; }
     <li>Paste everything from the Serial Monitor into the <a href="tools/muscle-characterization.html">muscle characterization page</a> and enter the muscle's length, diameter and braid turns.</li>
   </ol>
 
-  <h2>Week 3: pressure and leak test</h2>
+  <h2>Week 3: leak test</h2>
   <ol>
-    <li>Upload <code>muscle_pressure_logger.ino</code> to the UNO R4. The Serial Plotter shows the pressure live.</li>
-    <li>In the Serial Monitor, type <code>r</code>, then push and hold the syringe. It records for 20 seconds.</li>
-    <li>Copy the line that starts with DATA and paste it into the <a href="tools/muscle-pressure.html">muscle pressure page</a>. Paste more DATA lines to average several tests.</li>
-    <li>Keep it under 9 psi so the sensor doesn't get damaged.</li>
+    <li>On the muscle test stand, put the shutoff valve between the compressor and the muscle.</li>
+    <li>Unhook the bottom of the muscle so it hangs free and nothing pulls on the load cell.</li>
+    <li>Open the Serial Monitor (115200 baud, Newline) for the stand's Arduino and type <code>t</code> to zero with the muscle deflated.</li>
+    <li>Open the valve and fill the muscle to the pressure you want to test (for example, the pressure your jaw needs). Then close the valve.</li>
+    <li>Type <code>k</code>. It records for 30 seconds. Don't touch anything.</li>
+    <li>Copy the line that starts with DATA into the <a href="tools/muscle-pressure.html">leak test page</a>. Do 2 or 3 tests and paste each DATA line to average them.</li>
   </ol>
 
   <h2>Weeks 4 and 10: lift test</h2>

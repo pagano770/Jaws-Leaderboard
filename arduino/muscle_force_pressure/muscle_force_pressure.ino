@@ -17,6 +17,9 @@
 // Other commands:
 //   n        new trial number (for repeats of the whole set)
 //   h        one manual point: hold still, averages 2 s, prints one STEP line
+//   k        leak test: fill the muscle, close the shutoff valve, unhook the bottom
+//            of the muscle, then type k. Records 30 s and prints one DATA line for
+//            the Muscle Pressure: Leak Test page.
 //   l        live readings on/off (l1 = on, l0 = off)
 //   f123.4   set the load cell factor (counts per newton) without re-uploading
 //   ?        print settings
@@ -45,6 +48,10 @@ const unsigned long REC_MS   = 250;   // one STEP point every 0.25 s while recor
 const float MIN_PSI          = 0.3;   // ignore points below this (muscle not pressurized yet)
 const float FORCE_LIMIT_N    = 40.0;  // 5 kg load cell: stop above this. Use 90 for a 10 kg cell.
 const float PSI_LIMIT        = 60.0;  // stop above this pressure
+
+// ---------- leak test (k) ----------
+const float LEAK_SECONDS     = 30.0;  // length of one leak test
+const unsigned long LEAK_MS  = 100;   // one reading every 0.1 s
 
 // ---------- timing for manual points ----------
 const unsigned long SAMPLE_MS = 100;
@@ -181,6 +188,33 @@ void hold() {
   printStep(mp, mf, sqrt(vp), sqrt(vf));
 }
 
+// Leak test: fill the muscle with the compressor, close the shutoff valve, then type k.
+// Prints one DATA line (same format as the pressure logger) for the Muscle Pressure: Leak Test page.
+// The line is printed as it records, so nothing else can be printed until it's done.
+void leakTest() {
+  if (recording) { Serial.println(F("# stop recording first (type s)")); return; }
+  Serial.print(F("# LEAK TEST: valve closed, muscle hanging free. Recording "));
+  Serial.print(LEAK_SECONDS, 0); Serial.println(F(" s, don't touch anything. Copy the DATA line when it's done."));
+  int n = (int)(LEAK_SECONDS * 1000.0 / LEAK_MS);
+  float first = 0, last = 0;
+  Serial.print(F("DATA,")); Serial.print(LEAK_MS / 1000.0, 3);
+  unsigned long t0 = millis();
+  int i;
+  for (i = 0; i < n; i++) {
+    while (millis() - t0 < (unsigned long)i * LEAK_MS) {}
+    if (Serial.available()) break;   // any key stops it early
+    float p = readPsi();
+    if (i == 0) first = p;
+    last = p;
+    Serial.print(','); Serial.print(p, 2);
+  }
+  Serial.println();
+  while (Serial.available()) Serial.read();
+  Serial.print(F("# leak test done: ")); Serial.print(first, 2); Serial.print(F(" psi to "));
+  Serial.print(last, 2); Serial.print(F(" psi in ")); Serial.print(i * LEAK_MS / 1000.0, 1); Serial.println(F(" s"));
+  if (first < 1.0) Serial.println(F("# Pressure was under 1 psi at the start: fill the muscle and close the valve before typing k."));
+}
+
 void handle(String cmd) {
   cmd.trim();
   if (!cmd.length()) return;
@@ -189,6 +223,7 @@ void handle(String cmd) {
   else if (recording) Serial.println(F("# recording: type s to stop first"));
   else if (c == 't') tareAll();
   else if (c == 'h') hold();
+  else if (c == 'k') leakTest();
   else if (c == 'n') { trial++; printSettings(); }
   else if (c == 'c') { contractionMm = cmd.substring(1).toFloat(); printSettings(); }
   else if (c == 'l') { live = cmd.length() > 1 ? cmd.charAt(1) == '1' : !live; printSettings(); }
@@ -198,7 +233,7 @@ void handle(String cmd) {
     printSettings();
   }
   else if (c == '?') printSettings();
-  else Serial.println(F("# commands: t (zero)  c<mm>  s (start/stop)  n  h  l  f<factor>  ?"));
+  else Serial.println(F("# commands: t (zero)  c<mm>  s (start/stop)  n  h  k (leak test)  l  f<factor>  ?"));
 }
 
 void setup() {
