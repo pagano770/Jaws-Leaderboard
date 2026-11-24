@@ -78,6 +78,7 @@ canvas { display: block; width: 100%; height: 100%; }
 .math h3 small { font-weight: normal; color: var(--muted); }
 .math p { margin: 3px 0; }
 .math .eq { font-variant-numeric: tabular-nums; padding-left: 14px; }
+.math .quote { margin: 6px 0 6px 14px; padding: 8px 12px; border-left: 3px solid var(--gold); font-style: italic; }
 .math table { width: auto; margin: 4px 0 4px 14px; }
 .math td.r { text-align: right; }
 .lb { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 14px; margin-bottom: 10px; }
@@ -432,6 +433,12 @@ canvas { display: block; width: 100%; height: 100%; }
     let cmp = "<section><h3>7. Compare with the load cell</h3>";
     if (R.measN > 0) {
       cmp += "<p class='eq'>Measured: " + f(R.measMean, 2) + " N average (SD " + f(R.measSD, 2) + " N, " + R.measN + " squeeze" + (R.measN > 1 ? "s" : "") + ")</p>" +
+        (R.measN > 1
+          ? "<p class='eq'>95% interval for the mean = mean ± t × SD ÷ √n = " + f(R.measMean, 2) + " ± " + f(tcrit(R.measN - 1), 3) + " × " + f(R.measSD, 2) + " ÷ √" + R.measN +
+            " = <b>" + f(R.measMean - tcrit(R.measN - 1) * R.measSD / Math.sqrt(R.measN), 2) + " to " + f(R.measMean + tcrit(R.measN - 1) * R.measSD / Math.sqrt(R.measN), 2) + " N</b></p>" +
+            "<p class='eq'>Predicted, about 95%: " + f(R.F - 2 * R.sigF, 2) + " to " + f(R.F + 2 * R.sigF, 2) + " N</p>" +
+            (R.measN < 5 ? "<p>With fewer than 5 squeezes the interval is wide. Squeeze a few more times to tighten it.</p>" : "")
+          : "<p>Squeeze at least twice (five is better) to get an interval on the measurement.</p>") +
         "<p class='eq'>% error = |measured − calculated| ÷ calculated × 100 = " + f(R.pctErr, 1) + "%</p>" +
         (R.within ? "<p>The measurement is within 2σ_F of the prediction, so it is consistent with the model.</p>"
                   : "<p>The measurement is outside 2σ_F, so something the model leaves out matters here (friction, muscle stretch, bending, the linear muscle model).</p>");
@@ -453,6 +460,13 @@ canvas { display: block; width: 100%; height: 100%; }
                         : "<p>Needs measured squeezes for at least one orientation.</p>";
     s.push(ls + "</section>");
     el.innerHTML = s.join("");
+  }
+
+  // two-sided 95% t value for df degrees of freedom
+  function tcrit(df) {
+    const t = [12.706, 4.303, 3.182, 2.776, 2.571, 2.447, 2.365, 2.306, 2.262, 2.228, 2.201, 2.179, 2.160, 2.145, 2.131,
+               2.120, 2.110, 2.101, 2.093, 2.086, 2.080, 2.074, 2.069, 2.064, 2.060, 2.056, 2.052, 2.048, 2.045, 2.042];
+    return df < 1 ? NaN : df <= 30 ? t[df - 1] : 1.96;
   }
 
   // ---------- challenge 1: pressure for a target force ----------
@@ -477,6 +491,8 @@ canvas { display: block; width: 100%; height: 100%; }
     const dFdP = c * slope * arm / RLC * KPA;
     const sPsi = Math.sqrt((sF / dFdP) ** 2 + D.sP ** 2);
     const maxPsi = md.maxPsi;
+    // force spread at the set pressure: geometry plus the gauge
+    const sFall = Math.sqrt(sF ** 2 + (dFdP * D.sP) ** 2);
     out.innerHTML =
       "<section><h3>1. Muscle force needed</h3><p class='eq'>arm = R_MX cos θ + R_MY sin θ = " + f(RMX, 1) + " cos " + f(thD, 1) + "° + " + f(RMY, 1) + " sin " + f(thD, 1) + "° = " + f(arm, 2) + " mm</p>" +
       "<p class='eq'>F_M = F_LC × R_LC ÷ arm = " + f(tF, 2) + " × " + f(RLC, 1) + " ÷ " + f(arm, 2) + " = " + f(FM, 2) + " N" + (c === 1 ? " (both muscles together)" : " (average of both muscles)") + "</p></section>" +
@@ -485,6 +501,12 @@ canvas { display: block; width: 100%; height: 100%; }
       "<section><h3>3. Pressure range</h3><p class='eq'>σ_F from θ, R_MX, R_MY, R_LC, x1, x2 at this force = " + f(sF, 2) + " N</p>" +
       "<p class='eq'>∂F/∂P = " + f(dFdP, 3) + " N/psi → σ_P = √( (σ_F ÷ ∂F/∂P)² + σ_gauge² ) = √( (" + f(sF, 2) + " ÷ " + f(dFdP, 3) + ")² + " + f(D.sP, 1) + "² ) = " + f(sPsi, 2) + " psi</p>" +
       "<p class='eq'>Set the pressure to <b>" + f(psi, 1) + " psi</b>. About 95% range: " + f(psi - 2 * sPsi, 1) + " to " + f(psi + 2 * sPsi, 1) + " psi.</p>" +
+      "</section><section><h3>4. Your prediction in one sentence</h3>" +
+      "<p class='eq'>σ_F at " + f(psi, 1) + " psi = √( " + f(sF, 2) + "² + (" + f(dFdP, 3) + " × " + f(D.sP, 1) + ")² ) = " + f(sFall, 2) + " N</p>" +
+      "<p class='quote'>To reach " + f(tF, 1) + " N in orientation " + LABELS[i] + " at " + f(thD, 1) + "°, we need " + f(psi, 1) + " psi. At that pressure we are about 95% confident the bite force will land between " +
+      f(tF - 2 * sFall, 1) + " and " + f(tF + 2 * sFall, 1) + " N. Because of the uncertainty in our measurements, the pressure that actually gives " + f(tF, 1) + " N could be anywhere from " +
+      f(psi - 2 * sPsi, 1) + " to " + f(psi + 2 * sPsi, 1) + " psi, also with about 95% confidence.</p>" +
+      "<p>About 95% means ±2σ. Write this sentence on your Week 7 prediction.</p>" +
       (isFinite(maxPsi) && psi > maxPsi * 1.05 ? "<p class='bad'>That is above the highest pressure in your characterization (" + f(maxPsi, 1) + " psi), so the model is being stretched past your data.</p>" : "") +
       (md.example ? "<p class='bad'>This uses the made-up example muscle model.</p>" : "") + "</section>";
   }
